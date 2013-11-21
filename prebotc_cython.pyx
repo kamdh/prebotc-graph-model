@@ -29,7 +29,7 @@ def rhs(
     np.float Cm, np.float EK, np.float eCa, np.float ehp, np.float ECaN,
     np.float Esyn, np.float gK, np.float gL, np.float gNa, np.float Iapp, 
     np.float kIP3, np.float ks, np.float kNa, np.float kCa, 
-    np.float kCAN, np.float Nab, np.float rp,
+    np.float kCAN, np.float Nab, 
     np.float siCAN, np.float sih, np.float sihp, np.float sim, 
     np.float simp, np.float siN, np.float sis, np.float tauh, 
     np.float tauhp, np.float taum, np.float taun,

@@ -23,7 +23,7 @@ def rhs(
     Cm, EK, eCa, ehp, ECaN,
     Esyn, gK, gL, gNa, Iapp, 
     kIP3, ks, kNa, kCa, 
-    kCAN, Nab, rp,
+    kCAN, Nab,
     siCAN, sih, sihp, sim, 
     simp, siN, sis, tauh, 
     tauhp, taum, taun,
@@ -76,14 +76,18 @@ def rhs(
         # I_pump(Na)
         I_pump = 0.2 * ( phi( y[j+6] ) - phi( Nab ) )
         ## calculate synaptic current I_syn
-        # first get in-edges
-        these_in_edges = in_edges[i, 0:(in_degrees[i]-1)]
-        # find the synaptic variables for those edges
-        syn_variables = y[offset + these_in_edges]
-        # and the conductances
-        syn_conductances = edge_list[ these_in_edges, 2 ]
-        # Ohm's law
-        I_syn = np.dot(syn_variables, syn_conductances) * (y[j] - Esyn)
+        if in_degrees[i] > 0:
+            # first get in-edges
+            these_in_edges = in_edges[i, 0:(in_degrees[i]-1)]
+            # find the synaptic variables for those edges
+            syn_variables = y[offset + these_in_edges]
+            # and the conductances
+            syn_conductances = edge_list[ these_in_edges, 2 ]
+            # Ohm's law
+            I_syn = np.dot(syn_variables, syn_conductances) * (y[j] - Esyn)
+        else:
+            I_syn = 0
+            syn_variables = (0)
         ## set the derivatives
         # voltage V
         dydt[j] = -( Iapp + 
