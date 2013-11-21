@@ -14,17 +14,17 @@ printit=0;
 % fn1 = 'test_avg.mat';
 % fn2 = '../dashevskiy/test_avg.txt';
 % fn1 = 'avg_synapses.mat';
- fn2 = '../dashevskiy/avg_synapses.txt';
-fn1 = 'avg_synapses_dt_1e-3.mat';
-%fn2 = '../dashevskiy/avg_synapses_dt_5e-5.txt';
+%fn2 = '../dashevskiy/avg_synapses_dt_1e-4.txt';
+fn1 = 'avg_synapses_dt_5e-5.mat';
+fn2 = '../dashevskiy/avg_synapses_dt_5e-5.txt';
 outfn = 'postprocessing/run_both_synapses';
-finalStep = 10000;
+finalStep = 20000;
 minISIstep = 2;
 binWidth = 30e-3; % in s
 numNeuron = 30;
 numEqnsPerNeuron = 7;
 vThresh = 0.0;
-dt = 1e-3;
+dt = 5e-5;
 
 %% run analysis
 A_py = load(fn1);
@@ -77,6 +77,8 @@ colorbar
 ylabel('time')
 xlabel('state variable')
 title('absolute error of python model')
+disp(['max absolute error: ' num2str(max(err_abs(:)))])
+disp(['sum of abs error * dt: ' num2str(dt*sum(err_abs(:)))])
 
 if printit
     figure(1)

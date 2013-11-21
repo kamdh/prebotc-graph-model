@@ -3,7 +3,8 @@ function [binCts, bins] = binSpikes(spikeT, T, binWidth, dt)
         % If we get a cell array, assume it's a collection of
         % spikeTs
         numNeur = length(spikeT);
-        binCts = zeros(numNeur, ceil(length(T)*dt/binWidth)-1);
+        numBins = ceil(length(T)*dt/binWidth)-1;
+        binCts = zeros(numNeur, numBins);
         for neur = 1:numNeur
             % recursion!
             [binCts(neur, :), bins] = binSpikes( spikeT{neur}, T, ...

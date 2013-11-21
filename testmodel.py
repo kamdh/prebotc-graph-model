@@ -1,86 +1,38 @@
 #!/usr/bin/env python
 
 import sys
-import prebotc_pure as prebotc
+#import prebotc_pure as prebotc
 #import prebotc_cython as prebotc
+import prebotc_weave as prebotc
 import numpy as np
 import graph_tool as gt
 import scipy.io
 import scipy.integrate
+import pickle
 
-outfn = 'test.mat'
-dt = 5e-5
+paramFn = 'param_test.pkl'
+outFn = 'test.mat'
+graphFn = 'test.gml'
+dt = 1e-3
 t0 = 0.0
-tf = 1.0
+tf = 5
 Nstep = int(round(tf/dt))
-report_every = 100
+report_every = 1000
 num_eqns_per_vertex = 7 #V, Na m, Na h, K n, hp Nap, Ca Can, Na pump
 num_eqns_per_edge = 1
-abs_error = 1e-6
-rel_error = 1e-4
-my_params = dict(
-    #gP = 4.0,
-    EL = -0.0625,
-    gCaNS = 10.0,
-    gPS = 0.5,
-    ELS = -0.06,
-    gCaNI = 0.0,
-    gPI = 4.0,
-    ELI = -0.0625,
-    gCaNTS = 0.0,
-    gPTS = 5.,
-    ELTS = -0.062,
-    gCaNSil = 0.0,
-    gPSil = 0.6,
-    ELSil = -0.0605,
-    alpha = 6.6e-2,
-    Cab = 0.05,
-    Cm = 0.045,
-    EK = -0.075,
-    eCa = 0.0007,
-    ehp = 0.001,
-    ECaN = 0.0,
-    Esyn = 0.0,
-    gK = 30.0,
-    gL = 3.0,
-    gNa = 160.0,
-    Iapp = 0.0,
-    kIP3 = 1.2e+6,
-    ks = 1.0,
-    kNa = 10.0,
-    kCa = 22.5e+3,
-    kCAN = 0.9,
-    Nab = 5.0,
-    rp = 0.2,
-    siCAN = -0.05,
-    sih = 0.005,
-    sihp = 0.006,
-    sim = -0.0085,
-    simp = -0.006,
-    siN = -0.005,
-    sis = -0.003,
-    tauh = 0.015,
-    tauhp = 0.001,
-    taum = 0.001,
-    taun = 0.030,
-    taus = 0.015,
-    Qh = -0.030,
-    Qhp = -0.048,
-    Qm = -0.036,
-    Qmp = -0.040,
-    Qn = -0.030,
-    Qs = 0.015,
-    ENa = 0.045,
-    gsyn = 2.5
-    )
+abs_error = 1e-9
+rel_error = 1e-8
 
 def main(argv=None):
     # parse arguments (not used yet)
     if argv is None:
         argv = sys.argv
-
-    # load T Dashevskiy's graph topology
-    g = gt.load_graph("Dashevskiy.gml")
+    # load parameters
+    f = open(paramFn, 'r')
+    my_params = pickle.load(f)
+    f.close()
+    # load graph topology
+    g = gt.load_graph(graphFn)
     g.reindex_edges()
     num_vertices = g.num_vertices()
     num_edges = g.num_edges()
@@ -94,9 +46,13 @@ def main(argv=None):
     in_degrees = np.array( g.degree_property_map("in").get_array(),
                            dtype=np.int )
     max_degree = np.max( in_degrees )
-    # "ragged" array of in-edges
-    in_edges = np.zeros( (num_vertices, max_degree), dtype=np.int )
-    gsyn_props = g.edge_properties["gsyn"]
+    if num_edges > 0:
+        # "ragged" array of in-edges
+        in_edges = np.zeros( (num_vertices, max_degree), dtype=np.int )
+        gsyn_props = g.edge_properties["gsyn"]
+    else:
+        in_edges = np.zeros( (num_vertices, max_degree), dtype=np.int )
+        gsyn_props = []
     # for looping
     in_edge_ct = np.zeros( (num_vertices,), dtype=np.int )
     i = 0
@@ -137,6 +93,7 @@ def main(argv=None):
         #print(j)
         y[j] = 0.000001090946631
     #print(N)
+    print y
     
     # f is the rhs with parameters evaluated
     def f(t, y):
@@ -162,7 +119,7 @@ def main(argv=None):
         if ( (i+1)%report_every ) == 0:
             print t
             
-    scipy.io.savemat(outfn, mdict={'Y': save_state},
+    scipy.io.savemat(outFn, mdict={'Y': save_state},
                      oned_as = 'col')
     
 # run the main stuff
