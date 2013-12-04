@@ -13,7 +13,7 @@ import pickle
 paramFn = 'param_test.pkl'
 outFn = 'test.mat'
 graphFn = 'test.gml'
-dt = 1e-3
+dt = 1e-4
 t0 = 0.0
 tf = 5
 Nstep = int(round(tf/dt))

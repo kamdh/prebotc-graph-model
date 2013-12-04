@@ -6,28 +6,57 @@ import graph_tool as gt
 import scipy.io
 import scipy.integrate
 import time
+import argparse
 import pickle
 
-paramFn = 'param_test.pkl'
-# outFn = 'avg_synapses_dt_1e-3.mat'
-outFn = 'test.mat'
-# graphFn = 'Dashevskiy.gml'
-graphFn = 'test.gml'
-dt = 1e-4
-t0 = 0
-tf = 5
-Nstep = np.ceil(tf/dt)
+
+## true constants
 report_every = 1e3
 num_eqns_per_vertex = 7 #V, Na m, Na h, K n, hp Nap, Ca Can, Na pump
 num_eqns_per_edge = 1
-abs_error = 1e-10
-rel_error = 1e-9
+# paramFn = 'param_test.pkl'
+# # graphFn = 'Dashevskiy.gml'
+# graphFn = 'test.gml'
+# # outFn = 'avg_synapses_dt_1e-3.mat'
+# outFn = 'test.mat'
 
 def main(argv=None):
-    # parse arguments (not used yet)
-    if argv is None:
-        argv = sys.argv
-    # load parameters
+    ## input argument defaults
+    dt = 1e-4
+    t0 = 0
+    tf = 30
+    abs_error = 1e-10
+    rel_error = 1e-9
+    # parse arguments
+    parser = argparse.ArgumentParser(description='run the preBotC model')
+    parser.add_argument('-t0', type=float, default=t0,
+                        help='initial time (default: %(default)s)')
+    parser.add_argument('-tf', type=float, default=tf,
+                        help='final time (default: %(default)s)')
+    parser.add_argument('-dt', type=float, default=dt,
+                        help='time step (default: %(default)s)')
+    parser.add_argument('param', help='parameter pkl file')
+    parser.add_argument('graph', help='graph gml file')
+    parser.add_argument('output', help='output (.mat) filename')
+    parser.add_argument('--abs_err', '-a', type=float, 
+                        help='absolute error (default: %(default)s)',
+                        default=abs_error)
+    parser.add_argument('--rel_err', '-r', type=float, 
+                        help='relative error (default: %(default)s)',
+                        default=rel_error)
+    args = parser.parse_args(argv)
+    # store in usual variables
+    t0 = args.t0
+    tf = args.tf
+    df = args.dt
+    paramFn = args.param
+    graphFn = args.graph
+    outFn = args.output
+    abs_error = args.abs_err
+    rel_error = args.rel_err
+    # compute the number of steps required
+    Nstep = np.ceil(tf/dt)
+    # load model parameters
     f = open(paramFn, 'r')
     my_params = pickle.load(f)
     f.close()
