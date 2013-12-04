@@ -14,14 +14,9 @@ import pickle
 report_every = 1e3
 num_eqns_per_vertex = 7 #V, Na m, Na h, K n, hp Nap, Ca Can, Na pump
 num_eqns_per_edge = 1
-# paramFn = 'param_test.pkl'
-# # graphFn = 'Dashevskiy.gml'
-# graphFn = 'test.gml'
-# # outFn = 'avg_synapses_dt_1e-3.mat'
-# outFn = 'test.mat'
 
 def main(argv=None):
-    ## input argument defaults
+    # input argument defaults
     dt = 1e-4
     t0 = 0
     tf = 30
@@ -105,7 +100,6 @@ def main(argv=None):
     for i in range( num_vertices ):
         # vertex data in 0:num_eqns_per_vertex*num_vertices-1
         j = range(i*num_eqns_per_vertex, (i+1)*num_eqns_per_vertex)
-        #print(j)
         y[j] = [
             -0.026185387764343,
              0.318012107836673,
@@ -119,9 +113,7 @@ def main(argv=None):
     for i in range( num_edges ):
         j = range(offset + i*num_eqns_per_edge,
                   offset + (i+1)*num_eqns_per_edge)
-        #print(j)
         y[j] = 0.000001090946631
-    #print(N)
     
     # f is the rhs with parameters evaluated
     def f(t, y):
@@ -180,15 +172,6 @@ def main(argv=None):
     save_state = save_state[:, 0:(i-1)]
     elapsed = time.time() - t
     print 'Elapsed: %s' % elapsed
-        
-    ## hard-coded Euler method
-    # for i in range(Nstep):
-    #     dydt = f(0, y)
-    #     y = y + dydt * dt # fwd Euler
-    #     save_state[:, i] = y[ 0:\
-    #                           num_vertices*num_eqns_per_vertex:\
-    #                           num_eqns_per_vertex]
-
     scipy.io.savemat(outFn, mdict={'Y': save_state},
                      oned_as = 'col')
 
