@@ -8,7 +8,8 @@ close all
 %% parameters
 printit=0;
 %fn = 'avg_synapses_dt_1e-3.mat';
-fn = 'testER_1_d.mat';
+%fn = 'testER_1_d.mat';
+fn = 'testER_k=5.mat'
 outfn = 'postprocessing/run_both_synapses';
 firstStep = 25000;
 finalStep = 150000;
