@@ -9,13 +9,14 @@ import time
 import argparse
 import pickle
 
-
-## true constants
-report_every = 1e3
+## constants
+toolbar_width = 40
 num_eqns_per_vertex = 7 #V, Na m, Na h, K n, hp Nap, Ca Can, Na pump
 num_eqns_per_edge = 1
 
 def main(argv=None):
+    if argv is None:
+        argv = sys.argv
     # input argument defaults
     dt = 1e-4
     t0 = 0
@@ -23,7 +24,8 @@ def main(argv=None):
     abs_error = 1e-10
     rel_error = 1e-9
     # parse arguments
-    parser = argparse.ArgumentParser(description='run the preBotC model')
+    parser = argparse.ArgumentParser(prog="runmodel",
+                                     description='run the preBotC model')
     parser.add_argument('-t0', type=float, default=t0,
                         help='initial time (default: %(default)s)')
     parser.add_argument('-tf', type=float, default=tf,
@@ -39,16 +41,19 @@ def main(argv=None):
     parser.add_argument('--rel_err', '-r', type=float, 
                         help='relative error (default: %(default)s)',
                         default=rel_error)
-    args = parser.parse_args(argv)
+    parser.add_argument('--save_full', '-F', action='store_true',
+                        help='save all state variables (default: just membrane potentials)')
+    args = parser.parse_args(argv[1:])
     # store in usual variables
     t0 = args.t0
     tf = args.tf
-    df = args.dt
+    dt = args.dt
     paramFn = args.param
     graphFn = args.graph
     outFn = args.output
     abs_error = args.abs_err
     rel_error = args.rel_err
+    save_full = args.save_full
     # compute the number of steps required
     Nstep = np.ceil(tf/dt)
     # load model parameters
@@ -56,6 +61,7 @@ def main(argv=None):
     my_params = pickle.load(f)
     f.close()
     # load graph topology
+    print "Loading and processing graph"
     g = gt.load_graph(graphFn)
     g.reindex_edges()
     num_vertices = g.num_vertices()
@@ -125,9 +131,7 @@ def main(argv=None):
                            **my_params)
         return dydt
 
-    # start timing integration
-    t = time.time()
-    
+  
     #### integration
     ## scipy.odeint
     # tRange = np.arange(t0, tf+dt, dt)
@@ -136,8 +140,10 @@ def main(argv=None):
     #                                     atol = abs_error)
     ## scipy.integrate.ode
     # output vector of states
-    #save_state = np.zeros( (num_vertices, Nstep) ) 
-    save_state = np.zeros( (N, Nstep+1) )
+    if save_full:
+        save_state = np.zeros( (N, Nstep+1) )
+    else:
+        save_state = np.zeros( (num_vertices, Nstep+1) ) 
     r = scipy.integrate.ode(f)
     # method 1: BDF
     # r.set_integrator(
@@ -158,22 +164,44 @@ def main(argv=None):
     # r.set_integrator('lsode',
     #                  rtol = rel_error,
     #                  atol = abs_error)
+
     ## integrate the ODE
+    print "Running integration loop...."
+    # start timing integration
+    t = time.time()
+    # setup simple toolbar
+    # from http://stackoverflow.com/questions/3160699/python-progress-bar
+    global toolbar_width
+    sys.stdout.write("[%s]" % (" " * toolbar_width ))
+    sys.stdout.flush()
+    sys.stdout.write("\b" * (toolbar_width+1)) # return to 
     r.set_initial_value(y, t0)
     i = 0
     while r.successful() and r.t < tf:
         r.integrate(r.t + dt)
-        #save_state[:,i] = r.y[ 0:num_vertices*num_eqns_per_vertex:\
-        #                           num_eqns_per_vertex].copy()
-        save_state[:, i] = r.y.copy()
+        y = r.y.copy()
+        if save_full:
+            save_state[:, i] = y
+        else:
+            save_state[:, i] = y[ 0:(num_vertices*num_eqns_per_vertex):num_eqns_per_vertex ]
         i += 1
-        if ( (i)%report_every ) == 0:
-            print "%1.2f" % r.t
+        if ( i % (Nstep/toolbar_width) )==0 :
+            sys.stdout.write('#')
+            sys.stdout.flush()
+        # if ( (i)%report_every ) == 0:
+        #     print "%1.2f" % r.t
     save_state = save_state[:, 0:(i-1)]
     elapsed = time.time() - t
-    print 'Elapsed: %s' % elapsed
-    scipy.io.savemat(outFn, mdict={'Y': save_state},
-                     oned_as = 'col')
+    print "\nDone!\nElapsed: %1.2fs" % elapsed
+    # Time saving
+    t = time.time()
+    print "Saving output...."
+    scipy.io.savemat(outFn, 
+                     mdict={'Y': save_state,
+                            'vTypes': vertex_types},
+                     oned_as = 'column')
+    elapsed = time.time() - t
+    print "Done!\nSave time: %1.2fs" % elapsed
 
 # run the main stuff
 if __name__ == '__main__':
