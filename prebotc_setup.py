@@ -1,37 +1,14 @@
-#!/usr/bin/env python
-
-import sys
-#import prebotc_pure as prebotc
-#import prebotc_cython as prebotc
-import prebotc_weave as prebotc
+import pickle
 import numpy as np
 import graph_tool as gt
-import scipy.io
-import scipy.integrate
-import pickle
 
-paramFn = 'param_files/param_test.pkl'
-outFn = 'model_output/test.mat'
-graphFn = '../graphs/test.gml'
-dt = 1e-4
-t0 = 0.0
-tf = 5
-Nstep = int(round(tf/dt))
-report_every = 1000
-num_eqns_per_vertex = 7 #V, Na m, Na h, K n, hp Nap, Ca Can, Na pump
-num_eqns_per_edge = 1
-abs_error = 1e-9
-rel_error = 1e-8
-
-def main(argv=None):
-    # parse arguments (not used yet)
-    if argv is None:
-        argv = sys.argv
-    # load parameters
+def params(paramFn):
     f = open(paramFn, 'r')
     my_params = pickle.load(f)
     f.close()
-    # load graph topology
+    return my_params
+
+def graph(graphFn):
     g = gt.load_graph(graphFn)
     g.reindex_edges()
     num_vertices = g.num_vertices()
@@ -46,8 +23,8 @@ def main(argv=None):
     in_degrees = np.array( g.degree_property_map("in").get_array(),
                            dtype=np.int )
     max_degree = np.max( in_degrees )
+    # "ragged" array of in-edges
     if num_edges > 0:
-        # "ragged" array of in-edges
         in_edges = np.zeros( (num_vertices, max_degree), dtype=np.int )
         gsyn_props = g.edge_properties["gsyn"]
     else:
@@ -66,7 +43,11 @@ def main(argv=None):
         # increment indices
         in_edge_ct[ target_index ] += 1
         i += 1
-    ## setup initial conditions
+    
+    return num_vertices, num_edges, vertex_types, edge_list, \
+        in_edge_ct, in_edges
+
+def ics(num_vertices, num_edges, num_eqns_per_vertex, num_eqns_per_edge):
     # state will contain vertex variables & edge
     # variables in a 1d array
     N = num_vertices*num_eqns_per_vertex +\
@@ -76,7 +57,6 @@ def main(argv=None):
     for i in range( num_vertices ):
         # vertex data in 0:num_eqns_per_vertex*num_vertices-1
         j = range(i*num_eqns_per_vertex, (i+1)*num_eqns_per_vertex)
-        #print(j)
         y[j] = [
             -0.026185387764343,
              0.318012107836673,
@@ -90,39 +70,6 @@ def main(argv=None):
     for i in range( num_edges ):
         j = range(offset + i*num_eqns_per_edge,
                   offset + (i+1)*num_eqns_per_edge)
-        #print(j)
         y[j] = 0.000001090946631
-    #print(N)
-    print y
-    
-    # f is the rhs with parameters evaluated
-    def f(t, y):
-        dydt = prebotc.rhs(t, y, 
-                           vertex_types = vertex_types,
-                           edge_list = edge_list, 
-                           in_degrees = in_edge_ct,
-                           in_edges = in_edges,
-                           **my_params)
-        return dydt
-    
-    # output vector of states
-    save_state = np.zeros( (N, Nstep) ) 
+    return y, N
 
-    ## hard-coded Euler method
-    t = t0;
-    for i in range(Nstep):
-        dydt = f(t, y)
-        y = y + dydt * dt # fwd Euler
-        #save_state[:, i] = y[ 0:(num_vertices*num_eqns_per_vertex):num_eqns_per_vertex ] # just voltages
-        save_state[:, i] = y; # all vars
-        t = t + dt;
-        if ( (i+1)%report_every ) == 0:
-            print t
-            
-    scipy.io.savemat(outFn, mdict={'Y': save_state},
-                     oned_as = 'col')
-    
-# run the main stuff
-if __name__ == '__main__':
-    status = main()
-    sys.exit(status)

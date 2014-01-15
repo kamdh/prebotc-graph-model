@@ -1,18 +1,18 @@
 #!/usr/bin/env python
 import pickle
 
-f = open('param_test.pkl', 'w')
+f = open('param_files/param_test.pkl', 'w')
 my_params = dict(
     #gP = 4.0,
     EL = -0.0625,
     # CS params
-    gCaNS = 10.0,
-    gPS = 0.5,
-    ELS = -0.06,
+    gCaNS = 20.0,
+    gPS = 0.0,
+    ELS = -0.0595,
     # CI params
     gCaNI = 0.0,
     gPI = 4.0,
-    ELI = -0.0625,
+    ELI = -0.0627,
     # TS params
     gCaNTS = 0.0,
     gPTS = 5.,

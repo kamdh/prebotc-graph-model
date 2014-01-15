@@ -3,7 +3,7 @@
 import graph_tool.all as gt
 import pickle
 
-f = open('param_dashevskiy.pkl')
+f = open('param_files/param_dashevskiy.pkl')
 p = pickle.load(f)
 f.close()
 
@@ -46,4 +46,4 @@ vertex_type[v] = Sil
 
 g.edge_properties["gsyn"] = edge_gsyn
 g.vertex_properties["type"] = vertex_type
-g.save("test.gml", fmt="gml")
+g.save("../graphs/test.gml", fmt="gml")

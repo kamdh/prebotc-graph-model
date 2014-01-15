@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import pickle
 
-f = open('param_dashevskiy.pkl', 'w')
+f = open('param_files/param_dashevskiy.pkl', 'w')
 my_params = dict(
     #gP = 4.0,
     EL = -0.0625,
