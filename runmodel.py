@@ -1,6 +1,6 @@
 #!/usr/bin/env python
+import os
 import sys
-import prebotc_setup as setup
 import prebotc_weave as prebotc
 import numpy as np
 import graph_tool as gt
@@ -55,10 +55,10 @@ def main(argv=None):
     # compute the number of steps required
     Nstep = np.ceil(tf/dt)
     print "Loading parameters, graph, and setting up IC's"
-    my_params = setup.params(paramFn)
+    my_params = prebotc.params(paramFn)
     num_vertices, num_edges, vertex_types, edge_list, in_edge_ct, in_edges \
-        = setup.graph(graphFn)
-    y, N = setup.ics(num_vertices, num_edges, num_eqns_per_vertex, \
+        = prebotc.graph(graphFn)
+    y, N = prebotc.ics(num_vertices, num_edges, num_eqns_per_vertex, \
                          num_eqns_per_edge)
     # rhs of ODE with parameters evaluated
     f = lambda t, y: prebotc.rhs(t, y, 
@@ -118,7 +118,15 @@ def main(argv=None):
     print "Saving output...."
     scipy.io.savemat(outFn, 
                      mdict={'Y': save_state,
-                            'vTypes': vertex_types},
+                            'vTypes': vertex_types,
+                            'dt': dt,
+                            't0': t0,
+                            'tf': tf,
+                            'paramFn': os.path.abspath(paramFn),
+                            'graphFn': os.path.abspath(graphFn),
+                            'absErr': abs_error,
+                            'relErr': rel_error
+                            },
                      oned_as = 'column')
     # f = h5py.File(outFn, "w")
     # f['Y'] = save_state

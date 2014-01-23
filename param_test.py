@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 import pickle
+import scipy.io
+
+fn1 = 
+
 
 f = open('param_files/param_test.pkl', 'w')
 my_params = dict(
-    #gP = 4.0,
-    EL = -0.0625,
     # CS params
     gCaNS = 20.0,
     gPS = 0.0,
@@ -22,9 +24,11 @@ my_params = dict(
     gPSil = 0.6,
     ELSil = -0.0605,
     # shared params
+    #gP = 4.0,
+    EL = -0.0625,
     alpha = 6.6e-2,
     Cab = 0.05,
-    Cm = 0.045, # nF
+    Cm = 0.045, # nF, ie 45 pF
     EK = -0.075,
     eCa = 0.0007, # .0007, epsilon in Rubin
     ehp = 0.001,
@@ -63,3 +67,7 @@ my_params = dict(
     )
 pickle.dump(my_params, f)
 f.close()
+
+scipy.io.savemat(outFn, 
+                 mdict=my_params,
+                 oned_as = 'column')
