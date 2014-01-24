@@ -2,17 +2,21 @@
 # Kameron Decker Harris
 # pre-BotC model ODEs
 
-import pickle
+
 import numpy as np
 import graph_tool as gt
+import json
 import os
 from scipy import weave
 from scipy.weave import converters
 
+# constants
+num_eqns_per_vertex = 7 # V, Na m, Na h, K n, hp Nap, Ca Can, Na pump
+# num_eqns_per_edge = 1   # not necessary at the moment
+
 def params(paramFn):
-    f = open(paramFn, 'r')
-    my_params = pickle.load(f)
-    f.close()
+    with open(paramFn) as f:
+        my_params = json.load(f)
     return my_params
 
 def graph(graphFn):
@@ -80,11 +84,6 @@ def ics(num_vertices, num_edges, num_eqns_per_vertex, num_eqns_per_edge):
         y[j] = 0.000001090946631
     return y, N
 
-
-# constants
-num_eqns_per_vertex = 7 # V, Na m, Na h, K n, hp Nap, Ca Can, Na pump
-# num_eqns_per_edge = 1   # not necessary at the moment
-
 def rhs(
     t, # time
     y, # state variables
@@ -116,11 +115,21 @@ double infHN( double A, double B, double V );
 double tau( double A, double B, double C, double V );
 double phi( double x, double kNa );
 }
+
+double infHN( double A, double B, double V ) {
+  return 1.0/(1.0 + exp( (V - A)/B ));
+}
+
+double tau( double A, double B, double C, double V ) {
+  return A / cosh( 0.5 * (V - B)/C );
+}
+    
+double phi( double x, double kNa ) {
+  return pow(x,3) / (pow(x, 3) + pow(kNa, 3));
+}
 '''
-    with open('weave_code.c', 'r') as myfile:
-        code = myfile.read()
+    
     code = """
-//// main routine
 int num_vertices = Nvertex_types[0];
 int num_edges = Nedge_list[0];
 int offset = num_vertices*num_eqns_per_vertex;
@@ -157,8 +166,8 @@ for (i=0; i<num_vertices; i++) {
   double synVarMean = 0.0;
   for (k=0; k < (int)in_degrees(i); k++) {
     int edgeid = (int) in_edges(i,k);
-    /// synaptic var * conductance
-    gSynTot += y(offset + edgeid) * edge_list( edgeid, 2 );
+    gSynTot += y(offset + edgeid) *
+      edge_list( edgeid, 2 );
     synVarMean += y(offset + edgeid);
   }
   if ( in_degrees(i) > 0 ) {
@@ -207,6 +216,7 @@ for (i=0; i<num_edges; i++) {
 }
 """
 
+
     weave.inline(code, ['t', 'y', 'vertex_types','edge_list',
                         'in_degrees', 'in_edges', 'EL', 'gCaNS', 
                         'gPS', 'ELS', 'gCaNI', 'gPI', 'ELI', 
@@ -221,16 +231,16 @@ for (i=0; i<num_edges; i++) {
                         'ENa', 'gsyn', 'num_eqns_per_vertex',
                         'dydt'],
                  support_code = support_code,
-                 verbose =1,
+                 verbose = 2,
                  type_converters = converters.blitz, 
                  compiler='gcc',
-                 library_dirs = [os.getcwd()],
-                 libraries=['helpers'],
-                 headers=['<math.h>'],
-                 runtime_library_dirs = [os.getcwd()]
+                 # library_dirs = [os.getcwd()],
+                 # libraries=['helpers'],
+                 # runtime_library_dirs = [os.getcwd()],
+                 headers=['<math.h>']
                  )
 
-                                    
+    
     return dydt
 
 # extra business

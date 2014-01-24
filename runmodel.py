@@ -3,7 +3,6 @@ import os
 import sys
 import prebotc_weave as prebotc
 import numpy as np
-import graph_tool as gt
 import scipy.integrate
 import time
 import argparse
@@ -21,8 +20,8 @@ def parse_args(argv):
     dt = 1e-4
     t0 = 0
     tf = 30
-    abs_error = 1e-10
-    rel_error = 1e-9
+    abs_error = 1e-6
+    rel_error = 1e-4
     parser = argparse.ArgumentParser(prog="runmodel",
                                      description='run the preBotC model')
     parser.add_argument('-t0', type=float, default=t0,
@@ -85,20 +84,22 @@ def main(argv=None):
     #     )
     # method 2: Dormand-Price
     # r.set_integrator(
-    #     'dop853', 
+    #     'dopri5', 
     #     rtol = rel_error,
     #     atol = abs_error
     #     )
     # method 3: LSODE
-    # r.set_integrator('lsode',
+    # r.set_integrator('lsoda',
     #                  rtol = rel_error,
     #                  atol = abs_error)
     print "Running integration loop...."
     t = time.time()
+    bar_updates = 200
     widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()]
-    bar = progressbar.ProgressBar(maxval=Nstep, widgets=widgets)
+    bar = progressbar.ProgressBar(maxval=bar_updates, widgets=widgets)
     bar.start()
     i = 0
+    j = 0
     while r.successful() and r.t < tf:
         r.integrate(r.t + dt)
         y = r.y.copy()
@@ -107,8 +108,10 @@ def main(argv=None):
         else:
             save_state[:, i] = \
                 y[ 0:(num_vertices*num_eqns_per_vertex):num_eqns_per_vertex ]
-        bar.update(i)
         i += 1
+        if ( i % np.floor(Nstep/bar_updates) ) == 0:
+            bar.update(j)
+            j += 1
     bar.finish()
     save_state = save_state[:, 0:(i-1)]
     elapsed = time.time() - t
