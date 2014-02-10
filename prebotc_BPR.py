@@ -5,7 +5,7 @@
 # so-called Butera, Park, Rubin model
 
 import numpy as np
-import graph_tool as gt
+import networkx as nx
 import json
 import os
 from scipy import weave
@@ -21,33 +21,31 @@ def params(paramFn):
     return my_params
 
 def graph(graphFn):
-    g = gt.load_graph(graphFn)
-    g.reindex_edges()
-    num_vertices = g.num_vertices()
-    num_edges = g.num_edges()
+    g = nx.read_gml(graphFn)
+    #g.reindex_edges()
+    num_vertices = g.number_of_nodes()
+    num_edges = g.number_of_edges()
     # store vertex types
-    vertex_types = np.array( g.vertex_properties["type"].get_array(), 
+    vertex_types = np.array( nx.get_node_attributes(g, 'type').values(),
                              dtype=np.int )
     # construct an edge list
     edge_list = np.zeros( (num_edges, 3) )
     # also a lookup table for in-edges
     # this requires a degree list
-    in_degrees = np.array( g.degree_property_map("in").get_array(),
-                           dtype=np.int )
+    in_degrees = np.array( g.in_degree().values(), dtype=np.int )
     max_degree = np.max( in_degrees )
     # "ragged" array of in-edges
+    in_edges = np.zeros( (num_vertices, max_degree), dtype=np.int )
     if num_edges > 0:
-        in_edges = np.zeros( (num_vertices, max_degree), dtype=np.int )
-        gsyn_props = g.edge_properties["gsyn"]
+        gsyn_props = nx.get_edge_attributes(g, 'gsyn')
     else:
-        in_edges = np.zeros( (num_vertices, max_degree), dtype=np.int )
         gsyn_props = []
     # for looping
     in_edge_ct = np.zeros( (num_vertices,), dtype=np.int )
     i = 0
     for e in g.edges():
-        source_index = int( e.source() )
-        target_index = int( e.target() )
+        source_index = int( e[0] )
+        target_index = int( e[1] )
         edge_list[i,...] = [source_index, 
                             target_index,
                             gsyn_props[e]]
