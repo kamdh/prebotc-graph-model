@@ -10,8 +10,8 @@ import scipy.io
 import scipy.integrate
 import pickle
 
-paramFn = 'param_files/param_test.pkl'
-outFn = 'model_output/test.mat'
+paramFn = 'param_files/test.pkl'
+outFn = 'output/test.mat'
 graphFn = '../graphs/test.gml'
 dt = 1e-4
 t0 = 0.0
@@ -98,11 +98,11 @@ def main(argv=None):
     # f is the rhs with parameters evaluated
     def f(t, y):
         dydt = prebotc.rhs(t, y, 
-                           vertex_types = vertex_types,
-                           edge_list = edge_list, 
-                           in_degrees = in_edge_ct,
-                           in_edges = in_edges,
-                           **my_params)
+                           vertex_types,
+                           edge_list, 
+                           in_edge_ct,
+                           in_edges,
+                           my_params)
         return dydt
     
     # output vector of states

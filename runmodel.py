@@ -1,25 +1,24 @@
 #!/usr/bin/env python
 import os
 import sys
-import prebotc_weave as prebotc
+import prebotc_BPR as prebotc
+#import prebotc_weave as prebotc
 import numpy as np
 import scipy.integrate
 import time
 import argparse
 import scipy.io
 import progressbar
-#import h5py
-
-## constants
-toolbar_width = 40
-num_eqns_per_vertex = 7 #V, Na m, Na h, K n, hp Nap, Ca Can, Na pump
-num_eqns_per_edge = 1
 
 def parse_args(argv):
-    # defaults
-    dt = 1e-4
-    t0 = 0
-    tf = 30
+    # # defaults for original model
+    # dt = 1e-3
+    # tf = 30
+    # defaults for BPR model
+    dt = 1.0
+    tf = 30.0e3
+    # shared defaults
+    t0 = 0.0
     abs_error = 1e-6
     rel_error = 1e-4
     parser = argparse.ArgumentParser(prog="runmodel",
@@ -57,15 +56,15 @@ def main(argv=None):
     my_params = prebotc.params(paramFn)
     num_vertices, num_edges, vertex_types, edge_list, in_edge_ct, in_edges \
         = prebotc.graph(graphFn)
-    y, N = prebotc.ics(num_vertices, num_edges, num_eqns_per_vertex, \
-                         num_eqns_per_edge)
+    y, N = prebotc.ics(num_vertices, num_edges)
     # rhs of ODE with parameters evaluated
+    # f is the rhs with parameters evaluated
     f = lambda t, y: prebotc.rhs(t, y, 
-                                 vertex_types = vertex_types,
-                                 edge_list = edge_list, 
-                                 in_degrees = in_edge_ct,
-                                 in_edges = in_edges,
-                                 **my_params)
+                                 vertex_types,
+                                 edge_list,
+                                 in_edge_ct,
+                                 in_edges,
+                                 my_params)
     # vector of states to output
     if save_full:
         save_state = np.zeros( (N, Nstep+1) )
@@ -88,13 +87,13 @@ def main(argv=None):
     #     rtol = rel_error,
     #     atol = abs_error
     #     )
-    # method 3: LSODE
-    # r.set_integrator('lsoda',
+    # method 3: VODE
+    # r.set_integrator('vode',
     #                  rtol = rel_error,
     #                  atol = abs_error)
     print "Running integration loop...."
     t = time.time()
-    bar_updates = 200
+    bar_updates = 100
     widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()]
     bar = progressbar.ProgressBar(maxval=bar_updates, widgets=widgets)
     bar.start()
@@ -106,8 +105,7 @@ def main(argv=None):
         if save_full:
             save_state[:, i] = y
         else:
-            save_state[:, i] = \
-                y[ 0:(num_vertices*num_eqns_per_vertex):num_eqns_per_vertex ]
+            save_state[:, i] = prebotc.voltages(y, num_vertices)
         i += 1
         if ( i % np.floor(Nstep/bar_updates) ) == 0:
             bar.update(j)
@@ -122,6 +120,7 @@ def main(argv=None):
     scipy.io.savemat(outFn, 
                      mdict={'Y': save_state,
                             'vTypes': vertex_types,
+
                             'dt': dt,
                             't0': t0,
                             'tf': tf,
@@ -131,10 +130,6 @@ def main(argv=None):
                             'relErr': rel_error
                             },
                      oned_as = 'column')
-    # f = h5py.File(outFn, "w")
-    # f['Y'] = save_state
-    # f['vTypes'] = vertex_types
-    # f.close()
     elapsed = time.time() - t
     print "Done!\nSave time: %1.2fs" % elapsed
 

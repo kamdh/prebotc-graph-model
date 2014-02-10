@@ -2,7 +2,6 @@
 # Kameron Decker Harris
 # pre-BotC model ODEs
 
-
 import numpy as np
 import graph_tool as gt
 import json
@@ -12,7 +11,7 @@ from scipy.weave import converters
 
 # constants
 num_eqns_per_vertex = 7 # V, Na m, Na h, K n, hp Nap, Ca Can, Na pump
-# num_eqns_per_edge = 1   # not necessary at the moment
+num_eqns_per_edge = 1   # not necessary at the moment
 
 def params(paramFn):
     with open(paramFn) as f:
@@ -58,7 +57,7 @@ def graph(graphFn):
     return num_vertices, num_edges, vertex_types, edge_list, \
         in_edge_ct, in_edges
 
-def ics(num_vertices, num_edges, num_eqns_per_vertex, num_eqns_per_edge):
+def ics(num_vertices, num_edges):
     # state will contain vertex variables & edge
     # variables in a 1d array
     N = num_vertices*num_eqns_per_vertex +\
@@ -84,6 +83,10 @@ def ics(num_vertices, num_edges, num_eqns_per_vertex, num_eqns_per_edge):
         y[j] = 0.000001090946631
     return y, N
 
+def voltages(y, num_vertices):
+    V = y[ 0:(num_vertices*num_eqns_per_vertex):num_eqns_per_vertex ]
+    return V
+
 def rhs(
     t, # time
     y, # state variables
@@ -91,21 +94,60 @@ def rhs(
     edge_list, 
     in_degrees,
     in_edges,
-    EL, gCaNS, 
-    gPS, ELS, gCaNI, gPI,
-    ELI, gCaNTS, gPTS,
-    ELTS, gCaNSil, gPSil,
-    ELSil, alpha, Cab, 
-    Cm, EK, eCa, ehp, ECaN,
-    Esyn, gK, gL, gNa, Iapp, 
-    kIP3, ks, kNa, kCa, 
-    kCAN, Nab,
-    siCAN, sih, sihp, sim, 
-    simp, siN, sis, tauh, 
-    tauhp, taum, taun,
-    taus, Qh, Qhp, Qm,
-    Qmp, Qn, Qs, ENa, gsyn
+    params
     ):
+
+    EL = params['EL']
+    gCaNS = params['gCaNS']
+    gPS = params['gPS']
+    ELS = params['ELS']
+    gCaNI = params['gCaNI']
+    gPI = params['gPI']
+    ELI = params['ELI']
+    gCaNTS = params['gCaNTS']
+    gPTS = params['gPTS']
+    ELTS = params['ELTS']
+    gCaNSil = params['gCaNSil']
+    gPSil = params['gPSil']
+    ELSil = params['ELSil']
+    alpha = params['alpha']
+    Cab = params['Cab']
+    Cm = params['Cm']
+    EK = params['EK']
+    eCa = params['eCa']
+    ehp = params['ehp']
+    ECaN = params['ECaN']
+    Esyn = params['Esyn']
+    gK = params['gK']
+    gL = params['gL']
+    gNa = params['gNa']
+    Iapp = params['Iapp']
+    kIP3 = params['kIP3']
+    ks = params['ks']
+    kNa = params['kNa']
+    kCa = params['kCa']
+    kCAN = params['kCAN']
+    Nab = params['Nab']
+    siCAN = params['siCAN']
+    sih = params['sih']
+    sihp = params['sihp']
+    sim = params['sim']
+    simp = params['simp']
+    siN = params['siN']
+    sis = params['sis']
+    tauh = params['tauh']
+    tauhp = params['tauhp']
+    taum = params['taum']
+    taun = params['taun']
+    taus = params['taus']
+    Qh = params['Qh']
+    Qhp = params['Qhp']
+    Qm = params['Qm']
+    Qmp = params['Qmp']
+    Qn = params['Qn']
+    Qs = params['Qs']
+    ENa = params['ENa']
+    gsyn = params['gsyn']
 
     dydt = np.zeros(y.shape[0]) # initialize vector field
     
@@ -130,6 +172,8 @@ double phi( double x, double kNa ) {
 '''
     
     code = """
+//// edit
+
 int num_vertices = Nvertex_types[0];
 int num_edges = Nedge_list[0];
 int offset = num_vertices*num_eqns_per_vertex;
@@ -214,6 +258,7 @@ for (i=0; i<num_edges; i++) {
               infHN( Qs, sis, v_source ) -
               ks * y(j) ) / taus;
 }
+
 """
 
 
@@ -231,7 +276,7 @@ for (i=0; i<num_edges; i++) {
                         'ENa', 'gsyn', 'num_eqns_per_vertex',
                         'dydt'],
                  support_code = support_code,
-                 verbose = 2,
+                 verbose = 1,
                  type_converters = converters.blitz, 
                  compiler='gcc',
                  # library_dirs = [os.getcwd()],
