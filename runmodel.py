@@ -40,19 +40,22 @@ def parse_args(argv):
                         default=rel_error)
     parser.add_argument('--save_full', '-F', action='store_true',
                         help='save all state variables (default: just membrane potentials)')
+    parser.add_argument('--quiet', '-q', action='store_true',
+                        help='silence output (for running in batch mode)')
     args = parser.parse_args(argv[1:])
     return args.t0, args.tf, args.dt, args.param, args.graph, \
-        args.output, args.abs_err, args.rel_err, args.save_full
+        args.output, args.abs_err, args.rel_err, args.save_full, args.quiet
 
 def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    t0, tf, dt, paramFn, graphFn, outFn, abs_error, rel_error, save_full \
+    t0, tf, dt, paramFn, graphFn, outFn, abs_error, rel_error, save_full, quiet \
         = parse_args(argv)
     # compute the number of steps required
     Nstep = np.ceil(tf/dt)
-    print "Loading parameters, graph, and setting up IC's"
+    if not quiet:
+        print "Loading parameters, graph, and setting up IC's"
     my_params = prebotc.params(paramFn)
     num_vertices, num_edges, vertex_types, edge_list, in_edge_ct, in_edges \
         = prebotc.graph(graphFn)
@@ -91,14 +94,16 @@ def main(argv=None):
     # r.set_integrator('vode',
     #                  rtol = rel_error,
     #                  atol = abs_error)
-    print "Running integration loop...."
-    t = time.time()
-    bar_updates = 100
-    widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()]
-    bar = progressbar.ProgressBar(maxval=bar_updates, widgets=widgets)
-    bar.start()
+
+    if not quiet:
+        print "Running integration loop...."
+        t = time.time()
+        bar_updates = 100
+        widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()]
+        bar = progressbar.ProgressBar(maxval=bar_updates, widgets=widgets)
+        bar.start()
+        j = 0
     i = 0
-    j = 0
     while r.successful() and r.t < tf:
         r.integrate(r.t + dt)
         y = r.y.copy()
@@ -107,20 +112,22 @@ def main(argv=None):
         else:
             save_state[:, i] = prebotc.voltages(y, num_vertices)
         i += 1
-        if ( i % np.floor(Nstep/bar_updates) ) == 0:
-            bar.update(j)
-            j += 1
-    bar.finish()
+        if not quiet:
+            if ( i % np.floor(Nstep/bar_updates) ) == 0:
+                bar.update(j)
+                j += 1
     save_state = save_state[:, 0:(i-1)]
-    elapsed = time.time() - t
-    print "Done!\nElapsed: %1.2fs" % elapsed
-    # Time saving
-    t = time.time()
-    print "Saving output...."
+    if not quiet:
+        bar.finish()
+        elapsed = time.time() - t
+        print "Done!\nElapsed: %1.2fs" % elapsed
+        # Time saving
+        t = time.time()
+        print "Saving output...."
+    # save output
     scipy.io.savemat(outFn, 
                      mdict={'Y': save_state,
                             'vTypes': vertex_types,
-
                             'dt': dt,
                             't0': t0,
                             'tf': tf,
@@ -130,8 +137,9 @@ def main(argv=None):
                             'relErr': rel_error
                             },
                      oned_as = 'column')
-    elapsed = time.time() - t
-    print "Done!\nSave time: %1.2fs" % elapsed
+    if not quiet:
+        elapsed = time.time() - t
+        print "Done!\nSave time: %1.2fs" % elapsed
 
 # run the main stuff
 if __name__ == '__main__':
