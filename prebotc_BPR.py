@@ -81,6 +81,30 @@ def ics(num_vertices, num_edges):
         y[j] = 0.0000011
     return y, N
 
+def ics_random(num_vertices, num_edges):
+    # state will contain vertex variables & edge
+    # variables in a 1d array
+    N = num_vertices*num_eqns_per_vertex +\
+        num_edges*num_eqns_per_edge
+    # state vector y encodes vertex and edge data
+    y = np.zeros(N)
+    for i in range( num_vertices ):
+        # vertex data in 0:num_eqns_per_vertex*num_vertices-1
+        j = range(i*num_eqns_per_vertex, (i+1)*num_eqns_per_vertex)
+        y[j] = [
+            (7.06 + 53.6) * np.random.random_sample() - 53.6,
+            (0.95 - 0.00) * np.random.random_sample() + 0.00,
+            (0.64 - 0.21) * np.random.random_sample() + 0.21,
+            (0.95 - 0.02) * np.random.random_sample() + 0.02,
+            (0.93 - 0.46) * np.random.random_sample() + 0.46
+            ]
+    offset = num_vertices*num_eqns_per_vertex
+    for i in range( num_edges ):
+        j = range(offset + i*num_eqns_per_edge,
+                  offset + (i+1)*num_eqns_per_edge)
+        y[j] = (0.0025 - 0) * np.random.random_sample() + 0
+    return y, N
+
 def voltages(y, num_vertices):
     V = y[ 0:(num_vertices*num_eqns_per_vertex):num_eqns_per_vertex ]
     return V
