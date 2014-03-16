@@ -4,6 +4,7 @@ import sys
 import prebotc_BPR as prebotc
 #import prebotc_weave as prebotc
 import numpy as np
+import scipy.sparse
 import scipy.integrate
 import time
 import argparse
@@ -15,12 +16,14 @@ def parse_args(argv):
     # dt = 1e-3
     # tf = 30
     # defaults for BPR model
-    dt = 1.0
-    tf = 30.0e3
+    dt = 1.0 # ms
+    tf = 30.0e3 # ms
     # shared defaults
-    t0 = 0.0
+    t0 = 0.0 # ms
     abs_error = 1e-6
     rel_error = 1e-4
+    spike_thresh = -15 # mV
+    refractory = 6 # ms
     parser = argparse.ArgumentParser(prog="runmodel",
                                      description='run the preBotC model')
     parser.add_argument('-t0', type=float, default=t0,
@@ -39,18 +42,29 @@ def parse_args(argv):
                         help='relative error (default: %(default)s)',
                         default=rel_error)
     parser.add_argument('--save_full', '-F', action='store_true',
-                        help='save all state variables (default: just membrane potentials)')
+                        help='save all state variables (default: store membrane potentials)')
+    parser.add_argument('--save_spikes', '-S', action='store_true',
+                        help='''save just spike times (default: store membrane potentials); you should use dt < 10 ms''')
     parser.add_argument('--quiet', '-q', action='store_true',
                         help='silence output (for running in batch mode)')
+    parser.add_argument('--spike_thresh', type=float,
+                        default=spike_thresh,
+                        help='spike threshold (default:%(default) mV)')
+    parser.add_argument('--refractory', type=float, default=refractory,
+                        help='refractory period (default: %(default) ms)')
     args = parser.parse_args(argv[1:])
+    assert not ( args.save_spikes and args.save_full ), \
+        "only one of --save_spikes and --save_full can be set"
     return args.t0, args.tf, args.dt, args.param, args.graph, \
-        args.output, args.abs_err, args.rel_err, args.save_full, args.quiet
+        args.output, args.abs_err, args.rel_err, args.save_full, \
+        args.save_spikes, args.quiet, args.spike_thresh, args.refractory
 
 def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    t0, tf, dt, paramFn, graphFn, outFn, abs_error, rel_error, save_full, quiet \
+    t0, tf, dt, paramFn, graphFn, outFn, abs_error, rel_error, save_full, \
+        save_spikes, quiet, spike_thresh, refractory \
         = parse_args(argv)
     # compute the number of steps required
     Nstep = np.ceil(tf/dt)
@@ -59,7 +73,8 @@ def main(argv=None):
     my_params = prebotc.params(paramFn)
     num_vertices, num_edges, vertex_types, edge_list, in_edge_ct, in_edges \
         = prebotc.graph(graphFn)
-    y, N = prebotc.ics_random(num_vertices, num_edges)
+    #y, N = prebotc.ics_random(num_vertices, num_edges)
+    y,N = prebotc.ics(num_vertices, num_edges)
     # rhs of ODE with parameters evaluated
     # f is the rhs with parameters evaluated
     f = lambda t, y: prebotc.rhs(t, y, 
@@ -71,6 +86,10 @@ def main(argv=None):
     # vector of states to output
     if save_full:
         save_state = np.zeros( (N, Nstep+1) )
+    elif save_spikes:
+        # not boolean because of type conversions to matlab
+        save_state = scipy.sparse.dok_matrix( (num_vertices, Nstep+1) )
+        last_spike = np.ones( num_vertices ) * (-np.inf)
     else:
         save_state = np.zeros( (num_vertices, Nstep+1) ) 
     r = scipy.integrate.ode(f)
@@ -94,7 +113,6 @@ def main(argv=None):
     # r.set_integrator('vode',
     #                  rtol = rel_error,
     #                  atol = abs_error)
-
     if not quiet:
         print "Running integration loop...."
         t = time.time()
@@ -109,6 +127,13 @@ def main(argv=None):
         y = r.y.copy()
         if save_full:
             save_state[:, i] = y
+        elif save_spikes:
+            spikers = prebotc.spiking(y, num_vertices, spike_thresh)
+            for neur in spikers:
+                # only count if the new trigger occurs after reasonable delay
+                if ( i - last_spike[neur] ) >  np.ceil( refractory / dt ):
+                    save_state[neur, i] = 1
+                    last_spike[neur] = i
         else:
             save_state[:, i] = prebotc.voltages(y, num_vertices)
         i += 1
@@ -116,7 +141,10 @@ def main(argv=None):
             if ( i % np.floor(Nstep/bar_updates) ) == 0:
                 bar.update(j)
                 j += 1
-    save_state = save_state[:, 0:(i-1)]
+    if not save_spikes:
+        save_state = save_state[:, 0:(i-1)]
+    else:
+        save_state.resize( (num_vertices, i-1) )
     if not quiet:
         bar.finish()
         elapsed = time.time() - t
@@ -125,6 +153,8 @@ def main(argv=None):
         t = time.time()
         print "Saving output...."
     # save output
+    if save_spikes:
+        save_spikes = scipy.sparse.csr_matrix(save_spikes)
     scipy.io.savemat(outFn, 
                      mdict={'Y': save_state,
                             'vTypes': vertex_types,

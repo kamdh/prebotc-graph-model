@@ -109,6 +109,11 @@ def voltages(y, num_vertices):
     V = y[ 0:(num_vertices*num_eqns_per_vertex):num_eqns_per_vertex ]
     return V
 
+def spiking(y, num_vertices, thresh):
+    V = voltages(y, num_vertices)
+    spiking_neurons = np.where( V > thresh )[0]
+    return spiking_neurons
+
 def rhs( t, y,
          vertex_types, 
          edge_list, 
@@ -160,8 +165,8 @@ def rhs( t, y,
     Kd = params['Kd']
     sigma = params['sigma']
     ksyn = params['ksyn']
-    dydt = np.zeros(y.shape[0]) # initialize vector field
-
+    # initialize vector field
+    dydt = np.zeros(y.shape[0])
     code = """
 int num_vertices = Nvertex_types[0];
 int num_edges = Nedge_list[0];
@@ -242,7 +247,6 @@ for (i=0; i<num_edges; i++) {
 }
 
 """
-    
     weave.inline(code, 
                  ['t', 'y', 'vertex_types', 'edge_list', 'in_degrees', 
                   'in_edges', 'Cms', 'I_aps', 'vna', 'vk', 'vleaks', 'vsyn',
@@ -257,8 +261,6 @@ for (i=0; i<num_edges; i++) {
                  compiler='gcc',
                  headers=['<math.h>']
                  )
-
-    
     return dydt
 
 # extra business
