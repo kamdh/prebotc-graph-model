@@ -22,8 +22,8 @@ def parse_args(argv):
     t0 = 0.0 # ms
     abs_error = 1e-6
     rel_error = 1e-4
-    spike_thresh = -15 # mV
-    refractory = 6 # ms
+    spike_thresh = -15.0 # mV
+    refractory = 6.0 # ms
     parser = argparse.ArgumentParser(prog="runmodel",
                                      description='run the preBotC model')
     parser.add_argument('-t0', type=float, default=t0,
@@ -55,6 +55,8 @@ def parse_args(argv):
     args = parser.parse_args(argv[1:])
     assert not ( args.save_spikes and args.save_full ), \
         "only one of --save_spikes and --save_full can be set"
+    if args.save_spikes and args.dt > 1:
+        print 'Warning, dt is possibly too large to resolve spikes'
     return args.t0, args.tf, args.dt, args.param, args.graph, \
         args.output, args.abs_err, args.rel_err, args.save_full, \
         args.save_spikes, args.quiet, args.spike_thresh, args.refractory
@@ -83,14 +85,17 @@ def main(argv=None):
                                  in_edge_ct,
                                  in_edges,
                                  my_params)
-    # vector of states to output
+    # data structure to output, timeseries or sparse raster
     if save_full:
+        # all state variables
         save_state = np.zeros( (N, Nstep+1) )
     elif save_spikes:
-        # not boolean because of type conversions to matlab
+        # just spike times, as sparse matrix
+        # not boolean because type conversion bug in matlab output
         save_state = scipy.sparse.dok_matrix( (num_vertices, Nstep+1) )
         last_spike = np.ones( num_vertices ) * (-np.inf)
     else:
+        # timeseries of spikes
         save_state = np.zeros( (num_vertices, Nstep+1) ) 
     r = scipy.integrate.ode(f)
     r.set_initial_value(y, t0)
@@ -131,7 +136,7 @@ def main(argv=None):
             spikers = prebotc.spiking(y, num_vertices, spike_thresh)
             for neur in spikers:
                 # only count if the new trigger occurs after reasonable delay
-                if ( i - last_spike[neur] ) >  np.ceil( refractory / dt ):
+                if dt*( float(i) - last_spike[neur] ) >  refractory:
                     save_state[neur, i] = 1
                     last_spike[neur] = i
         else:
@@ -152,9 +157,13 @@ def main(argv=None):
         # Time saving
         t = time.time()
         print "Saving output...."
+    if save_full:
+        save_str = 'full'
+    elif save_spikes:
+        save_str = 'spikes'
+    else:
+        save_str = 'V'
     # save output
-    if save_spikes:
-        save_spikes = scipy.sparse.csr_matrix(save_spikes)
     scipy.io.savemat(outFn, 
                      mdict={'Y': save_state,
                             'vTypes': vertex_types,
@@ -164,7 +173,8 @@ def main(argv=None):
                             'paramFn': os.path.abspath(paramFn),
                             'graphFn': os.path.abspath(graphFn),
                             'absErr': abs_error,
-                            'relErr': rel_error
+                            'relErr': rel_error,
+                            'saveStr': save_str
                             },
                      oned_as = 'column')
     if not quiet:
