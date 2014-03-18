@@ -12,7 +12,7 @@ import scipy.io
 import progressbar
 
 def parse_args(argv):
-    # # defaults for original model
+    # # defaults for original model with seconds as time units
     # dt = 1e-3
     # tf = 30
     # defaults for BPR model
@@ -75,8 +75,8 @@ def main(argv=None):
     my_params = prebotc.params(paramFn)
     num_vertices, num_edges, vertex_types, edge_list, in_edge_ct, in_edges \
         = prebotc.graph(graphFn)
-    #y, N = prebotc.ics_random(num_vertices, num_edges)
-    y,N = prebotc.ics(num_vertices, num_edges)
+    y, N = prebotc.ics_random(num_vertices, num_edges)
+    #y, N = prebotc.ics(num_vertices, num_edges)
     # rhs of ODE with parameters evaluated
     # f is the rhs with parameters evaluated
     f = lambda t, y: prebotc.rhs(t, y, 
