@@ -57,52 +57,45 @@ def graph(graphFn):
     return num_vertices, num_edges, vertex_types, edge_list, \
         in_edge_ct, in_edges
 
-def ics(num_vertices, num_edges):
+def ics(num_vertices, num_edges, random=True):
     # state will contain vertex variables & edge
     # variables in a 1d array
-    N = num_vertices*num_eqns_per_vertex +\
-        num_edges*num_eqns_per_edge
+    N = num_vertices*num_eqns_per_vertex + num_edges*num_eqns_per_edge
     # state vector y encodes vertex and edge data
     y = np.zeros(N)
-    for i in range( num_vertices ):
-        # vertex data in 0:num_eqns_per_vertex*num_vertices-1
-        j = range(i*num_eqns_per_vertex, (i+1)*num_eqns_per_vertex)
-        y[j] = [
-            -50,
-             0.004,
-             0.33,
-             0.03,
-             0.93
-             ]
-    offset = num_vertices*num_eqns_per_vertex
-    for i in range( num_edges ):
-        j = range(offset + i*num_eqns_per_edge,
-                  offset + (i+1)*num_eqns_per_edge)
-        y[j] = 0.0000011
-    return y, N
-
-def ics_random(num_vertices, num_edges):
-    # state will contain vertex variables & edge
-    # variables in a 1d array
-    N = num_vertices*num_eqns_per_vertex +\
-        num_edges*num_eqns_per_edge
-    # state vector y encodes vertex and edge data
-    y = np.zeros(N)
-    for i in range( num_vertices ):
-        # vertex data in 0:num_eqns_per_vertex*num_vertices-1
-        j = range(i*num_eqns_per_vertex, (i+1)*num_eqns_per_vertex)
-        y[j] = [
-            (7.06 + 53.6) * np.random.random_sample() - 53.6,
-            (0.95 - 0.00) * np.random.random_sample() + 0.00,
-            (0.64 - 0.21) * np.random.random_sample() + 0.21,
-            (0.95 - 0.02) * np.random.random_sample() + 0.02,
-            (0.93 - 0.46) * np.random.random_sample() + 0.46
+    if random:
+        for i in range( num_vertices ):
+            # vertex data in 0:num_eqns_per_vertex*num_vertices-1
+            j = range(i*num_eqns_per_vertex, (i+1)*num_eqns_per_vertex)
+            # ranges below come from range of variables in sample output run
+            y[j] = [
+                (7.06 + 53.6) * np.random.random_sample() - 53.6,
+                (0.95 - 0.00) * np.random.random_sample() + 0.00,
+                (0.64 - 0.21) * np.random.random_sample() + 0.21,
+                (0.95 - 0.02) * np.random.random_sample() + 0.02,
+                (0.93 - 0.46) * np.random.random_sample() + 0.46
             ]
-    offset = num_vertices*num_eqns_per_vertex
-    for i in range( num_edges ):
-        j = range(offset + i*num_eqns_per_edge,
-                  offset + (i+1)*num_eqns_per_edge)
-        y[j] = (0.0025 - 0) * np.random.random_sample() + 0
+        offset = num_vertices*num_eqns_per_vertex
+        for i in range( num_edges ):
+            j = range(offset + i*num_eqns_per_edge,
+                      offset + (i+1)*num_eqns_per_edge)
+            y[j] = (0.0025 - 0) * np.random.random_sample() + 0
+    else:
+        for i in range( num_vertices ):
+            # vertex data in 0:num_eqns_per_vertex*num_vertices-1
+            j = range(i*num_eqns_per_vertex, (i+1)*num_eqns_per_vertex)
+            y[j] = [
+                -50,
+                 0.004,
+                 0.33,
+                 0.03,
+                 0.93
+                 ]
+        offset = num_vertices*num_eqns_per_vertex
+        for i in range( num_edges ):
+            j = range(offset + i*num_eqns_per_edge,
+                      offset + (i+1)*num_eqns_per_edge)
+            y[j] = 0.0000011
     return y, N
 
 def voltages(y, num_vertices):
@@ -127,6 +120,8 @@ def rhs( t, y,
     vk = params['vk']
     vleaks = params['vleaks']
     vsyn = params['vsyn']
+    vsynE = params['vsynE']
+    vsynI = params['vsynI']
     vm = params['vm']
     vn = params['vn']
     vmp = params['vmp']
@@ -207,21 +202,22 @@ for (i=0; i<num_vertices; i++) {
              *(Ce - y(j+3));
   J_ER_out=Ve * pow(y(j+3), 2) / ( pow(Ke, 2) + pow(y(j+3), 2) );
   //// calculate synaptic current I_syn
-  double gSynTot = 0.0;
-  //double synVarMean = 0.0;
+  I_syn = 0.0;
   for (k=0; k < (int)in_degrees(i); k++) {
     int edgeid = (int) in_edges(i,k);
-    gSynTot += y(offset + edgeid) *
-      edge_list( edgeid, 2 );
-    //synVarMean += y(offset + edgeid);
+    double gSyn = edge_list( edgeid, 2 );
+    double synVar = y( offset + edgeid );
+    if ( gSyn < 0.0 ) {
+      // inhibitory
+      I_syn += abs(gSyn) * synVar * ( y(j) - vsynI );
+    } 
+    else {
+      // excitatory
+      I_syn += abs(gSyn) * synVar * ( y(j) - vsynE );
+    }
   }
-  if ( in_degrees(i) > 0 ) {
-    // Ohm's law
-    I_syn = gSynTot * (y(j) - vsyn);
-    //synVarMean = synVarMean / in_degrees(i);
-  } else {
+  if ( (int)in_degrees(i) == 0 ) {
     I_syn = 0.0;
-    //synVarMean = 0.0;
   }
   //// set the derivatives
   // v'
@@ -238,19 +234,19 @@ for (i=0; i<num_vertices; i++) {
 // edge variables
 for (i=0; i<num_edges; i++) {
   double v_source, v_target, msyninf;
-  int sourceid = (int) edge_list(i,0);
+  int sourceid = (int) edge_list(i, 0);
+  double gsyn = edge_list(i, 2);
   v_source = y( sourceid * num_eqns_per_vertex );
   //v_target = edge_list(i, 1);
   j = offset + i;
-  msyninf = 1/(1 + exp( ( v_source - vsyn )/ssyn));
+  msyninf = 1/( 1 + exp( ( v_source - vsyn )/ssyn ) );
   dydt(j) = ( (1 - y(j)) * msyninf - ksyn * y(j) ) / tausyn;
 }
-
 """
     weave.inline(code, 
                  ['t', 'y', 'vertex_types', 'edge_list', 'in_degrees', 
-                  'in_edges', 'Cms', 'I_aps', 'vna', 'vk', 'vleaks', 'vsyn',
-                  'vm', 'vn', 'vmp', 'vh', 'sm', 'sn', 'smp', 'sh', 'ssyn',
+                  'in_edges', 'Cms', 'I_aps', 'vna', 'vk', 'vleaks', 'vsynE', 'vsynI',
+                  'vsyn', 'vm', 'vn', 'vmp', 'vh', 'sm', 'sn', 'smp', 'sh', 'ssyn',
                   'taunb', 'tauhb', 'tausyn', 'gk', 'gna', 'gnap', 
                   'gl_CS', 'gl_CI', 'gl_TS', 'gl_Q', 'Kcan', 'ncan', 
                   'gcan_CS', 'gcan_CI', 'gcan_TS', 'gcan_Q', 'I', 'Ct', 'fi',

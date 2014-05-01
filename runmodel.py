@@ -27,11 +27,11 @@ def parse_args(argv):
     parser = argparse.ArgumentParser(prog="runmodel",
                                      description='run the preBotC model')
     parser.add_argument('-t0', type=float, default=t0,
-                        help='initial time (default: %(default)s)')
+                        help='initial time (default: %(default)s ms)')
     parser.add_argument('-tf', type=float, default=tf,
-                        help='final time (default: %(default)s)')
+                        help='final time (default: %(default)s ms)')
     parser.add_argument('-dt', type=float, default=dt,
-                        help='time step (default: %(default)s)')
+                        help='time step (default: %(default)s ms)')
     parser.add_argument('param', help='parameter pkl file')
     parser.add_argument('graph', help='graph gml file')
     parser.add_argument('output', help='output (.mat) filename')
@@ -49,9 +49,9 @@ def parse_args(argv):
                         help='silence output (for running in batch mode)')
     parser.add_argument('--spike_thresh', type=float,
                         default=spike_thresh,
-                        help='spike threshold (default:%(default) mV)')
+                        help='spike threshold (default:%(default)s mV)')
     parser.add_argument('--refractory', type=float, default=refractory,
-                        help='refractory period (default: %(default) ms)')
+                        help='refractory period (default: %(default)s ms)')
     args = parser.parse_args(argv[1:])
     assert not ( args.save_spikes and args.save_full ), \
         "only one of --save_spikes and --save_full can be set"
@@ -75,8 +75,8 @@ def main(argv=None):
     my_params = prebotc.params(paramFn)
     num_vertices, num_edges, vertex_types, edge_list, in_edge_ct, in_edges \
         = prebotc.graph(graphFn)
-    y, N = prebotc.ics_random(num_vertices, num_edges)
-    #y, N = prebotc.ics(num_vertices, num_edges)
+    y, N = prebotc.ics(num_vertices, num_edges)
+    #y, N = prebotc.ics(num_vertices, num_edges, random=False)
     # rhs of ODE with parameters evaluated
     # f is the rhs with parameters evaluated
     f = lambda t, y: prebotc.rhs(t, y, 
