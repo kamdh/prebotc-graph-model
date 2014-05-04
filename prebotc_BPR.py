@@ -28,6 +28,8 @@ def graph(graphFn):
     # store vertex types
     vertex_types = np.array( nx.get_node_attributes(g, 'type').values(),
                              dtype=np.int )
+    vertex_inh = np.array( nx.get_node_attributes(g, 'inh').values(),
+                           dtype=np.int )
     # construct an edge list
     edge_list = np.zeros( (num_edges, 3) )
     # also a lookup table for in-edges
@@ -46,9 +48,14 @@ def graph(graphFn):
     for e in g.edges():
         source_index = int( e[0] )
         target_index = int( e[1] )
-        edge_list[i,...] = [source_index, 
-                            target_index,
-                            gsyn_props[e]]
+        is_inh = vertex_inh[ source_index ]
+        if is_inh == 1:
+            inh_mult = -1
+        else:
+            inh_mult = 1
+        edge_list[i,...] = [ source_index, 
+                             target_index,
+                             inh_mult * abs(gsyn_props[e]) ]
         in_edges[ target_index, in_edge_ct[target_index] ] = i
         # increment indices
         in_edge_ct[ target_index ] += 1
@@ -265,3 +272,4 @@ def _test():
 
 if __name__ == "__main__":
     _test()
+

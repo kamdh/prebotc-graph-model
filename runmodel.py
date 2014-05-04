@@ -75,6 +75,8 @@ def main(argv=None):
     my_params = prebotc.params(paramFn)
     num_vertices, num_edges, vertex_types, edge_list, in_edge_ct, in_edges \
         = prebotc.graph(graphFn)
+    if not quiet:
+        print edge_list
     y, N = prebotc.ics(num_vertices, num_edges)
     #y, N = prebotc.ics(num_vertices, num_edges, random=False)
     # rhs of ODE with parameters evaluated
@@ -99,7 +101,8 @@ def main(argv=None):
         save_state = np.zeros( (num_vertices, Nstep+1) ) 
     r = scipy.integrate.ode(f)
     r.set_initial_value(y, t0)
-    # method 1: BDF
+    # # other integration methods
+    # # method 1: BDF
     # r.set_integrator(
     #     'vode', 
     #     method='bdf', 
@@ -108,13 +111,13 @@ def main(argv=None):
     #     rtol= rel_error,
     #     atol= abs_error
     #     )
-    # method 2: Dormand-Price
+    # # method 2: Dormand-Price
     # r.set_integrator(
     #     'dopri5', 
     #     rtol = rel_error,
     #     atol = abs_error
     #     )
-    # method 3: VODE
+    # # method 3: VODE
     # r.set_integrator('vode',
     #                  rtol = rel_error,
     #                  atol = abs_error)
