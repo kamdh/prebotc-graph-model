@@ -42,9 +42,12 @@ def parse_args(argv):
                         help='relative error (default: %(default)s)',
                         default=rel_error)
     parser.add_argument('--save_full', '-F', action='store_true',
-                        help='save all state variables (default: store membrane potentials)')
+                        help=('save all state variables '
+                              '(default: store membrane potentials)'))
     parser.add_argument('--save_spikes', '-S', action='store_true',
-                        help='''save just spike times (default: store membrane potentials); you should use dt < 10 ms''')
+                        help=('save just spike times '
+                              '(default: store membrane potentials); '
+                              'you should use dt < 10 ms'''))
     parser.add_argument('--quiet', '-q', action='store_true',
                         help='silence output (for running in batch mode)')
     parser.add_argument('--spike_thresh', type=float,
@@ -65,27 +68,20 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    t0, tf, dt, paramFn, graphFn, outFn, abs_error, rel_error, save_full, \
-        save_spikes, quiet, spike_thresh, refractory \
-        = parse_args(argv)
+    (t0, tf, dt, paramFn, graphFn, outFn, abs_error, rel_error, save_full, 
+     save_spikes, quiet, spike_thresh, refractory) = parse_args(argv)
     # compute the number of steps required
     Nstep = np.ceil(tf/dt)
     if not quiet:
         print "Loading parameters, graph, and setting up IC's"
     my_params = prebotc.params(paramFn)
-    num_vertices, num_edges, vertex_types, edge_list, in_edge_ct, in_edges \
-        = prebotc.graph(graphFn)
-    if not quiet:
-        print edge_list
+    num_vertices, num_edges, graph_params = prebotc.graph(graphFn)
     y, N = prebotc.ics(num_vertices, num_edges)
     #y, N = prebotc.ics(num_vertices, num_edges, random=False)
     # rhs of ODE with parameters evaluated
     # f is the rhs with parameters evaluated
     f = lambda t, y: prebotc.rhs(t, y, 
-                                 vertex_types,
-                                 edge_list,
-                                 in_edge_ct,
-                                 in_edges,
+                                 graph_params,
                                  my_params)
     # data structure to output, timeseries or sparse raster
     if save_full:
@@ -169,7 +165,6 @@ def main(argv=None):
     # save output
     scipy.io.savemat(outFn, 
                      mdict={'Y': save_state,
-                            'vTypes': vertex_types,
                             'dt': dt,
                             't0': t0,
                             'tf': tf,
@@ -177,7 +172,8 @@ def main(argv=None):
                             'graphFn': os.path.abspath(graphFn),
                             'absErr': abs_error,
                             'relErr': rel_error,
-                            'saveStr': save_str
+                            'saveStr': save_str,
+                            'finalState': y
                             },
                      oned_as = 'column')
     if not quiet:

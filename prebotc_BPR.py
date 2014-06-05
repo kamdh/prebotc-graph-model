@@ -10,14 +10,30 @@ import json
 import os
 from scipy import weave
 from scipy.weave import converters
+import math  # allow functions in math module
 
 # constants
 num_eqns_per_vertex = 5
 num_eqns_per_edge = 1
 
 def params(paramFn):
+    def parse_I_aps(var, paramFn):
+        if isinstance(var, (int, float, long)):
+            # then it is constant
+            fun = lambda t: var
+        elif isinstance(var, basestring):
+            # then it should be python code for a function
+            code = "lambda t: " + var
+            # below is not safe, but we trust the param file
+            bytecode = compile( code, paramFn, 'eval' )
+            fun = eval( bytecode )
+        else:
+            raise Exception("wrong type for I_aps in " + paramFn)
+        return fun
     with open(paramFn) as f:
         my_params = json.load(f)
+    my_params["I_apsE"] = parse_I_aps( my_params["I_apsE"], paramFn )
+    my_params["I_apsI"] = parse_I_aps( my_params["I_apsI"], paramFn )
     return my_params
 
 def graph(graphFn):
@@ -26,10 +42,12 @@ def graph(graphFn):
     num_vertices = g.number_of_nodes()
     num_edges = g.number_of_edges()
     # store vertex types
-    vertex_types = np.array( nx.get_node_attributes(g, 'type').values(),
-                             dtype=np.int )
-    vertex_inh = np.array( nx.get_node_attributes(g, 'inh').values(),
-                           dtype=np.int )
+    vertex_types = np.array(nx.get_node_attributes(g, 'type').values(),
+                            dtype=np.int)
+    vertex_inh = np.array(nx.get_node_attributes(g, 'inh').values(),
+                          dtype=np.int )
+    vertex_respir_area = np.array(
+        nx.get_node_attributes(g, 'respir_area').values(), dtype=np.int)
     # construct an edge list
     edge_list = np.zeros( (num_edges, 3) )
     # also a lookup table for in-edges
@@ -60,9 +78,9 @@ def graph(graphFn):
         # increment indices
         in_edge_ct[ target_index ] += 1
         i += 1
-    
-    return num_vertices, num_edges, vertex_types, edge_list, \
-        in_edge_ct, in_edges
+    graph_params = (vertex_types, vertex_inh, vertex_respir_area,
+                    edge_list, in_edge_ct, in_edges)
+    return num_vertices, num_edges, graph_params
 
 def ics(num_vertices, num_edges, random=True):
     # state will contain vertex variables & edge
@@ -115,14 +133,15 @@ def spiking(y, num_vertices, thresh):
     return spiking_neurons
 
 def rhs( t, y,
-         vertex_types, 
-         edge_list, 
-         in_degrees,
-         in_edges,
+         graph_params,
          params
          ):
+    # unpack all of the parameters
+    (vertex_types, vertex_inh, vertex_respir_area, edge_list,
+     in_degrees, in_edges) = graph_params
     Cms = params['Cms']
-    I_aps = params['I_aps']
+    I_apsE = params['I_apsE']
+    I_apsI = params['I_apsI']
     vna = params['vna']
     vk = params['vk']
     vleaks = params['vleaks']
@@ -169,6 +188,9 @@ def rhs( t, y,
     ksyn = params['ksyn']
     # initialize vector field
     dydt = np.zeros(y.shape[0])
+    # evaluate time-varying input currents
+    I_apsE_t = I_apsE(t)
+    I_apsI_t = I_apsI(t)
     code = """
 int num_vertices = Nvertex_types[0];
 int num_edges = Nedge_list[0];
@@ -179,13 +201,24 @@ double gl_array[]   = {gl_CS, gl_CI, gl_TS, gl_Q};
 //// vertex variables
 for (i=0; i<num_vertices; i++) {
   double minf, ninf, minfp, hinf, taun, tauh, I_na, I_k, I_nap, I_l,
-    caninf, I_can, J_ER_in, J_ER_out, Ce, I_syn, gcan, gl;
+    caninf, I_can, J_ER_in, J_ER_out, Ce, I_syn, gcan, gl, I_aps;
   int type_idx;
+  int is_inh;
   j = i*num_eqns_per_vertex; // index of first (V) variable
   type_idx = (int) vertex_types(i); // neuron type
+  is_inh = (int) vertex_inh(i); // whether or not it's inhibitory
   //// type-dependent values
   gcan = gcan_array[type_idx];
   gl = gl_array[type_idx];
+  if (is_inh == 0) {
+    I_aps = (double) I_apsE_t;
+  } 
+  else if (is_inh == 1) {
+    I_aps = (double) I_apsI_t;
+  } 
+  else {
+    throw \"is_inh returned nonsensical result\";
+  }
   //// activation/inactivation variables
   minf  = 1/(1+exp(( y(j) - vm )/sm));
   ninf  = 1/(1+exp(( y(j) - vn )/sn));
@@ -228,7 +261,7 @@ for (i=0; i<num_vertices; i++) {
   }
   //// set the derivatives
   // v'
-  dydt(j) = -( I_k + I_na + I_nap + I_l + I_aps + I_can + I_syn ) / Cms;
+  dydt(j) = -( I_k + I_na + I_nap + I_l - I_aps + I_can + I_syn ) / Cms;
   // n'
   dydt(j+1) = (ninf - y(j+1))/taun;
   // h'
@@ -251,10 +284,11 @@ for (i=0; i<num_edges; i++) {
 }
 """
     weave.inline(code, 
-                 ['t', 'y', 'vertex_types', 'edge_list', 'in_degrees', 
-                  'in_edges', 'Cms', 'I_aps', 'vna', 'vk', 'vleaks', 'vsynE', 'vsynI',
-                  'vsyn', 'vm', 'vn', 'vmp', 'vh', 'sm', 'sn', 'smp', 'sh', 'ssyn',
-                  'taunb', 'tauhb', 'tausyn', 'gk', 'gna', 'gnap', 
+                 ['t', 'y', 'vertex_types', 'vertex_inh', 'edge_list', 
+                  'in_degrees', 'in_edges', 'Cms', 'I_apsE_t', 'I_apsI_t', 
+                  'vna', 'vk', 'vleaks', 'vsynE', 'vsynI', 'vsyn', 'vm', 'vn',
+                  'vmp', 'vh', 'sm', 'sn', 'smp', 'sh', 'ssyn', 'taunb', 
+                  'tauhb', 'tausyn', 'gk', 'gna', 'gnap', 
                   'gl_CS', 'gl_CI', 'gl_TS', 'gl_Q', 'Kcan', 'ncan', 
                   'gcan_CS', 'gcan_CI', 'gcan_TS', 'gcan_Q', 'I', 'Ct', 'fi',
                   'LL', 'P', 'Ki', 'Ka', 'Ve', 'Ke', 
