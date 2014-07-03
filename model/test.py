@@ -1,3 +1,0 @@
-import runmodel
-
-runmodel.main()
