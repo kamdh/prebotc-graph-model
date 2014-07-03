@@ -1,0 +1,12 @@
+{"Cms": 21,"vna": 50, "vk": -85, "vleaks": -58,
+ "vm": -34, "vn": -29, "vmp": -40, "vh": -48, "sm": -5, "sn": -4,
+ "smp": -6, "sh": 5, "taunb": 10, "tauhb": 10000, "gk": 11.2,
+ "gna": 28, "gnap": 1, "Kcan": 0.74, "ncan": 0.97,
+ "gl_CS": 1.0, "gl_CI": 1.0, "gl_TS": 0.8, "gl_Q": 1.285,
+ "gcan_CS": 0.7, "gcan_CI": 0, "gcan_TS": 0, "gcan_Q": 0,
+ "I": 1, "Ct": 1.25, "fi": 0.000025, "LL": 0.37,
+ "P": 31000, "Ki": 1.0, "Ka": 0.4, "Ve": 400, "Ke": 0.2, "A": 0.005,
+ "Kd": 0.4, "sigma": 0.185, "vsynE": 0, "vsynI": -70, 
+ "vsyn": 0, "ssyn": -3, "ksyn": 1, "tausyn": 15,
+ "I_apsI": 0, 
+ "I_apsE": "0.1 * math.sin( t / 1000 * 2 * math.pi * 2.0 /3 )"}
