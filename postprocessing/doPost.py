@@ -27,7 +27,7 @@ def parse_args(argv):
     bin_width = 20 # ms
     cutoff = 0.5
     peak_order = 20
-    eta_norm_pts = 10
+    eta_norm_pts = 8
     op_abs_thresh = 0.2
     # parsing
     parser = argparse.ArgumentParser(prog="doPost",
@@ -360,8 +360,9 @@ def event_trig_avg(events, data, normalize=False, pts=10):
     if normalize:
         from scipy.interpolate import griddata
         max_interval = 2*pts
-        xgrid1 = np.linspace(-.5, 0, num=pts, endpoint=False)
-        xgrid2 = np.linspace(0, .5, num=pts)
+        fullrange = np.linspace(-.5, .5, num=max_interval)
+        xgrid1 = fullrange[0:pts]
+        xgrid2 = fullrange[pts:]
     else:
         max_interval = 2*np.max(np.hstack((events-breakpts[0:-1],
                                           breakpts[1:]-events)))
@@ -369,23 +370,24 @@ def event_trig_avg(events, data, normalize=False, pts=10):
     numevents = events.shape[0]
     eta = np.zeros((data.shape[0], max_interval))
     for i in range(numevents):
-        timeidx = range(int(breakpts[i]), int(breakpts[i+1]))
+        timeidx = np.arange(int(breakpts[i]), int(breakpts[i+1]), dtype=np.int)
         thisevent = events[i] 
-        center = np.where(timeidx==thisevent)[0].astype(int)
+        center = int(np.where(timeidx==thisevent)[0].astype(int))
         if normalize:
-            xs1 = (np.array(timeidx[:center], dtype=np.float) 
-                   - timeidx[center])
-            xs1 /= xs1[0]*(-2)
-            xs2 = (np.array(timeidx[center:], dtype=np.float) 
-                   - timeidx[center])
-            xs2 /= xs2[-1]*2
-            fun1 = lambda x: scipy.interpolate.griddata(xs1, x, xgrid1)
-            fun2 = lambda x: scipy.interpolate.griddata(xs2, x, xgrid2)
-            toadd =np.hstack((
-                np.apply_along_axis(fun1,
-                                    1, data[:,timeidx[:center]]),
-                np.apply_along_axis(fun2,
-                                    1, data[:,timeidx[center:]])))
+            xs1 = np.array(timeidx[:center] - timeidx[center], dtype=np.float)
+            xs1 /= xs1[0]*(-2.0)
+            xs2 = np.array(timeidx[center+1:] - timeidx[center], dtype=np.float)
+            xs2 /= xs2[-1]*2.0
+            # fun1 = lambda x: scipy.interpolate.griddata(xs1, x, xgrid1)
+            # fun2 = lambda x: scipy.interpolate.griddata(xs2, x, xgrid2)
+            xs = np.hstack((xs1, xs2))
+            toadd = np.apply_along_axis(lambda x: scipy.interpolate.griddata(
+                xs, x, fullrange), 1, data[:,timeidx])
+            # toadd =np.hstack((
+            #     np.apply_along_axis(fun1,
+            #                         1, data[:,timeidx[:center]]),
+            #     np.apply_along_axis(fun2,
+            #                         1, data[:,timeidx[center:]])))
             eta += toadd
         else:
             lpad = midpt - center
