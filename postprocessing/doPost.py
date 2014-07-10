@@ -502,8 +502,7 @@ def main(argv = None):
     op_abs = np.abs(ops)
     op_angle_mean = np.mean(op_angle[op_abs > op_abs_thresh])
     op_angle_std = np.std(op_angle[op_abs > op_abs_thresh])
-    ## Load in graph data for matlab to use later
-    graph_fn='../../data/random_fine_2/graphs/er_n300_k2.0_deg_pI0.20_rep0.gml'
+    ## Load in graph data for matlab to use later, so far unused
     (vertex_types, vertex_inh, 
      vertex_respir_area, graph_adj) = graph_attributes(graph_fn)
     ## Save output
