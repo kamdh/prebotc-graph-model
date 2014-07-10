@@ -16,8 +16,6 @@ from scikits.talkbox.tools.correlations import acorr
 from IPython import embed
 from sklearn.decomposition import NMF
 
-maxorder=20
-eta_norm_pts = 10
 
 def parse_args(argv):
     # defaults
@@ -28,6 +26,9 @@ def parse_args(argv):
     butter_low = 1 # Hz
     bin_width = 20 # ms
     cutoff = 0.5
+    peak_order = 20
+    eta_norm_pts = 10
+    op_abs_thresh = 0.2
     # parsing
     parser = argparse.ArgumentParser(prog="doPost",
                                      description=('Postprocessing of' 
@@ -51,8 +52,8 @@ def parse_args(argv):
                         type=float, default=f_sigma)
     parser.add_argument('--butter_high', 
                         help=('Butterworth filter upper cutoff frequency, Hz '
-                              '(default: %(default)s)'),
-                        type=float, default=butter_high)
+                              '(default: %(default)s)'), 
+                       type=float, default=butter_high)
     parser.add_argument('--butter_low', 
                         help=('Butterworth filter lower cutoff frequency, Hz '
                               '(default: %(default)s)'),
@@ -63,10 +64,23 @@ def parse_args(argv):
     parser.add_argument('--cut', '-c', 
                         help='burst cutoff parameter (default: %(default)s)',
                         type=float, default=cutoff)
+    parser.add_argument('--peak_order', 
+                        help=('maximum order for defining peak number of bins ',
+                              '(default: %(default)s)'),
+                        type=int, default=peak_order)
+    parser.add_argument('--eta_norm_pts',
+                        help=('half the number of points in [-.5, .5] onto ',
+                              'which to interpolate (default: %(default)s)'),
+                        type=int, default=eta_norm_pts)
+    parser.add_argument('--op_abs_thresh', 
+                        help=('threshold order parameter magnitude above which ',
+                              'to calculate statistics'),
+                        type=float, default=op_abs_thresh)
     args = parser.parse_args(argv[1:])
-    return args.sim, args.output, args.transient, args.sec, args.thresh, \
-        args.fsig, args.butter_low, args.butter_high, args.bin_width,\
-        args.cut, args.volt
+    return (args.sim, args.output, args.transient, args.sec, args.thresh,
+            args.fsig, args.butter_low, args.butter_high, args.bin_width,
+            args.cut, args.volt, args.peak_order, args.eta_norm_pts,
+            args.op_abs_thresh)
 
 def chop_transient(data, transient, dt):
     '''
@@ -391,25 +405,55 @@ def nmf_error(eta):
     reconstruction_err = nmf.reconstruction_err_
     return float(reconstruction_err)
 
+def order_param(eta_norm, eta_t_norm):
+    '''
+    Compute the order parameter for the normalized (phase) ETAs.
+
+    Parameters
+    ==========
+      eta_norm: normalized ETA array
+      eta_t_norm: [-.5, .5] phases corresponding to second axis of array
+    
+    Returns
+    =======
+      z: array of complex valued order parameters
+    '''
+    num_neurons = eta_norm.shape[0]
+    num_bins = eta_norm.shape[1]
+    dtheta = np.min(np.diff(eta_t_norm))
+    density_eta = eta_norm/np.tile(np.sum(eta_norm, axis=1),(num_bins,1)).T
+    z = np.sum(density_eta*
+               np.exp(1.0j*
+                      np.tile(eta_t_norm,(num_neurons,1))*
+                      (2*np.pi)), 
+               axis=1)
+    return z
+    
 def main(argv = None):
+    '''
+    main function
+    '''
+    ## Setup parameters for postprocessing
     if argv is None:
         argv = sys.argv
     (simFn, outFn, trans, sec_flag, spike_thresh, f_sigma, butter_low, 
-     butter_high, bin_width, cutoff, are_volts) = parse_args(argv)
+     butter_high, bin_width, cutoff, are_volts, 
+     peak_order, eta_norm_pts, op_abs_thresh) = parse_args(argv)
     butter_freq = np.array([butter_low, butter_high])
     if sec_flag:
         scalet = 1e3
     else:
         scalet = 1
-    ## load simulation output
-    ## assumes no --save_full
+    ## Load simulation output
     sim_output = scipy.io.loadmat(simFn)
-    ## begin postprocessing
+    ## Setup a few more variables, assumes no --save_full
+    if sim_output['saveStr'][0] == 'full':
+        raise Exception('output should not be from --save_full option')
     graph_fn = str(sim_output['graphFn'][0])
     dt = float(sim_output['dt']) * scalet
     data = chop_transient(sim_output['Y'], trans, dt)
     num_neurons = np.shape(data)[0]
-    tMax = np.shape(data)[1]
+    ## Begin postprocessing
     ## spike trains
     if are_volts:
         spikes, spike_mat = find_spikes(data, spike_thresh)
@@ -417,46 +461,55 @@ def main(argv = None):
         spike_mat = data.todense()
         spikes = data.nonzero()
     bins, spike_mat_bin = bin_spikes(spike_mat, bin_width, dt)
-    ## filtering
+    ## Filter spike raster for integrated activity, filtered spike trains
     # spike_fil, butter_int = spikes_filt(spike_mat, dt, f_sigma, butter_freq)
     spike_fil_bin, butter_int_bin, spike_fil_butter = spikes_filt(spike_mat_bin, 
                                                                   dt*bin_width, 
                                                                   f_sigma, 
                                                                   butter_freq)
+    ## Peri-neuron time histogram
     psth_bin = np.sum(spike_mat_bin, axis=0)
-    ## synchrony measures
+    ## Synchrony measures from autocorrelation
     if are_volts:
         chi, autocorr = synchrony_stats(data, dt)
     else:
         chi, autocorr = synchrony_stats(spike_fil_bin, dt*bin_width)
     peak_lag, peak_freq, freq, power = peak_freq_welch(psth_bin, dt*bin_width)
-    ## burst measures
+    ## Old burst stats, remove??
     (duty_cycle, ibi_mean, ibi_cv, burst_length_mean, burst_length_cv, ibi_vec,
      burst_lengths, burst_start_locs, burst_peak_locs, burst_peaks, bursting, 
      bad_bursts) = burst_stats(butter_int_bin, cutoff, dt*bin_width)
-    pop_burst_peak = scipy.signal.argrelmax(butter_int_bin, order=maxorder)[0]
-    # plt.plot(bins, butter_int_bin)
-    # plt.plot(bins[which_bins_max], butter_int_bin[which_bins_max], 'r*')
-    # eta = event_trig_avg(pop_burst_peak, spike_mat_bin)
+    ## New burst stats
+    ## Compute the population burst peaks
+    pop_burst_peak = scipy.signal.argrelmax(butter_int_bin, order=peak_order)[0]
+    ## Compute event triggered averages
+    ## First, using absolute time
     eta = event_trig_avg(pop_burst_peak, spike_fil_bin)
     eta_t = (np.arange(eta.shape[1])-eta.shape[1]/2)*bin_width
+    ## Second, normalize time to be a phase variable [-.5, .5]
     eta_norm = event_trig_avg(pop_burst_peak, spike_fil_bin, normalize=True,
                               pts=eta_norm_pts)
     eta_t_norm = np.linspace(-0.5, 0.5, 2*eta_norm_pts)
+    ## Remove negative values, numerical
     eta[eta < 0] = 0
     eta_norm[eta_norm < 0] = 0
-    eta_nmf_err = nmf_error(eta)
-    eta_norm_nmf_err = nmf_error(eta_norm)
-    ## graph data
+    ## Nonnegative matrix factorizations as expiratory measure (old)
+    # eta_nmf_err = nmf_error(eta)
+    # eta_norm_nmf_err = nmf_error(eta_norm)
+    ## Order parameters
+    ops = order_param(eta_norm, eta_t_norm)
+    op_angle = np.angle(ops)/(2*np.pi)
+    op_abs = np.abs(ops)
+    op_angle_mean = np.mean(op_angle[op_abs > op_abs_thresh])
+    op_angle_std = np.std(op_angle[op_abs > op_abs_thresh])
+    ## Load in graph data for matlab to use later
     graph_fn='../../data/random_fine_2/graphs/er_n300_k2.0_deg_pI0.20_rep0.gml'
     (vertex_types, vertex_inh, 
      vertex_respir_area, graph_adj) = graph_attributes(graph_fn)
-    embed()
-    ## save output
+    ## Save output
     scipy.io.savemat(outFn,
                       mdict = {'bins': bins,
                                'spike_mat_bin': spike_mat_bin,
-                               # 'thetas': thetas,
                                # 'spike_fil': spike_fil,
                                # 'butter_int': butter_int,
                                'spike_fil_bin': spike_fil_bin,
@@ -486,7 +539,10 @@ def main(argv = None):
                                'vertex_types': vertex_types,
                                'vertex_inh': vertex_inh,
                                'vertex_respir_area': vertex_respir_area,
-                               'graph_adj': graph_adj
+                               'graph_adj': graph_adj,
+                               'ops': ops,
+                               'op_angle_mean': op_angle_mean,
+                               'op_angle_std': op_angle_std
                                },
                       oned_as='column'
                      )

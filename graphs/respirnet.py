@@ -40,7 +40,8 @@ def er_prebot(n, p, pTypes, pI, gE, gI):
     nx.set_node_attributes(graph, 'inh',
                            {x: assign_inh(pI) for x in graph.nodes()})
     nx.set_edge_attributes(graph, 'gsyn', 
-                           {x: assign_gsyn(graph, x, gE, gI) for x in graph.edges()})
+                           {x: assign_gsyn(graph, x, gE, gI)
+                            for x in graph.edges()})
     return graph
 
 def er_prebot_bot(n, p_mat_I, p_mat_E, pTypes, pI, gE, gI):
@@ -82,7 +83,8 @@ def er_prebot_bot(n, p_mat_I, p_mat_E, pTypes, pI, gE, gI):
     # setup nodes
     graph = nx.empty_graph(2*n)
     graph = nx.DiGraph(graph)
-    nx.set_node_attributes(graph, 'respir_area', {x: 0 if x < n else 1 for x in graph.nodes()})
+    nx.set_node_attributes(graph, 'respir_area', {x: 0 if x < n else 1
+                                                  for x in graph.nodes()})
     nx.set_node_attributes(graph, 'type', 
                            {x: assign_type(pTypes) for x in graph.nodes()})
     nx.set_node_attributes(graph, 'inh',
@@ -105,6 +107,7 @@ def er_prebot_bot(n, p_mat_I, p_mat_E, pTypes, pI, gE, gI):
             graph.add_edge(*e)
     # update conductances... node types should be inherited from before
     nx.set_edge_attributes(graph, 'gsyn', 
-                           {x: assign_gsyn(graph, x, gE, gI) for x in graph.edges()})
+                           {x: assign_gsyn(graph, x, gE, gI)
+                            for x in graph.edges()})
     graph.name = "er_prebot_bot"
     return graph
