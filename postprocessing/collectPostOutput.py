@@ -18,9 +18,9 @@ outFn = os.path.join(os.environ['HOME'], 'work', 'prebotc',
                       'data', projName, 'post/collected.mat')
 ####
 srcDir = os.path.join(os.environ['HOME'], 'work', 'prebotc', 'src')
-iputFn = os.path.join(srcDir, projName + "_collect_control")
-postFn = os.path.join(srcDir, projName + "_post")
-errFn = os.path.join(srcDir, projName + "_post_err")
+iputFn = os.path.join(srcDir, 'pipeline', projName + "_collect_control")
+postFn = os.path.join(srcDir, 'pipeline', projName + "_post")
+errFn = os.path.join(srcDir, 'pipeline', projName + "_post_err")
 
 f = open(iputFn, 'r')
 lines = f.readlines()
