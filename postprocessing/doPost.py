@@ -12,7 +12,7 @@ import scipy.io
 import argparse
 import networkx as nx
 #from matplotlib.pyplot import acorr, psd
-from scikits.talkbox.tools.correlations import acorr
+#from scikits.talkbox.tools.correlations import acorr
 from IPython import embed
 from sklearn.decomposition import NMF
 
@@ -206,7 +206,9 @@ def synchrony_stats(data, dt, maxlags=3000):
     sigma_mean = np.mean(sigma)
     chisq = sigma_pop / sigma_mean
     chi = np.sqrt(chisq)
-    autocorr = acorr(data_pop - np.mean(data_pop), onesided=True, scale='coeff')
+    #autocorr = acorr(data_pop - np.mean(data_pop), onesided=True, scale='coeff')
+    mean_subtract = data_pop - np.mean(data_pop)
+    autocorr = scipy.signal.correlate(mean_subtract, mean_subtract, mode='valid')
     return chi, autocorr
 
 def peak_freq_welch(data, dt):
@@ -215,9 +217,10 @@ def peak_freq_welch(data, dt):
     '''
     # f, Pxx = scipy.signal.welch(data, fs = 1000/dt, detrend='constant',
     #                              return_onesided = True, nperseg=2**14)
+    data = np.array(data, dtype=np.float)
     freq, power = scipy.signal.periodogram(data, fs = 1000/dt,
-                                       return_onesided=True, 
-                                       detrend='constant')
+                                           return_onesided=True, 
+                                           detrend='constant')
     idx = np.argmax(power)
     peak_freq = freq[idx]
     peak_lag = 1/peak_freq
@@ -366,7 +369,7 @@ def event_trig_avg(events, data, normalize=False, pts=10):
     else:
         max_interval = 2*np.max(np.hstack((events-breakpts[0:-1],
                                           breakpts[1:]-events)))
-    midpt = np.floor(max_interval / 2)
+    midpt = int(np.floor(max_interval / 2))
     numevents = events.shape[0]
     eta = np.zeros((data.shape[0], max_interval))
     for i in range(numevents):
@@ -381,8 +384,11 @@ def event_trig_avg(events, data, normalize=False, pts=10):
             # fun1 = lambda x: scipy.interpolate.griddata(xs1, x, xgrid1)
             # fun2 = lambda x: scipy.interpolate.griddata(xs2, x, xgrid2)
             xs = np.hstack((xs1, xs2))
-            toadd = np.apply_along_axis(lambda x: scipy.interpolate.griddata(
-                xs, x, fullrange), 1, data[:,timeidx])
+            toadd = np.apply_along_axis(lambda x: 
+                                        scipy.interpolate.griddata(xs,
+                                                                   x, 
+                                                                   fullrange), 
+                                        1, data[:,timeidx])
             # toadd =np.hstack((
             #     np.apply_along_axis(fun1,
             #                         1, data[:,timeidx[:center]]),
@@ -392,7 +398,7 @@ def event_trig_avg(events, data, normalize=False, pts=10):
         else:
             lpad = midpt - center
             rpad = max_interval - (len(timeidx)+lpad)
-            eta += np.lib.pad(data[:, timeidx], ((0,0), (lpad,rpad)), 
+            eta += np.pad(data[:, timeidx], ((0,0), (lpad,rpad)), 
                               'constant', constant_values=(0,0))
     eta /= float(numevents)
     return eta
