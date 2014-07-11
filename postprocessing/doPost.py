@@ -377,34 +377,17 @@ def event_trig_avg(events, data, normalize=False, pts=10):
         thisevent = events[i] 
         center = int(np.where(timeidx==thisevent)[0].astype(int))
         if normalize:
-            # try:
             xs1 = np.array(timeidx[:center] - timeidx[center], 
                            dtype=np.float)
             xs1 /= xs1[0]*(-2.0)
             xs2 = np.array(timeidx[center+1:] - timeidx[center], 
                            dtype=np.float)
             xs2 /= xs2[-1]*2.0
-            # fun1 = lambda x: scipy.interpolate.griddata(xs1, x, xgrid1)
-            # fun2 = lambda x: scipy.interpolate.griddata(xs2, x, xgrid2)
             xs = np.hstack((xs1, xs2))
             toadd = np.apply_along_axis(lambda x: 
                                         scipy.interpolate.griddata(
                                             xs, x, fullrange), 
                                         1, data[:,timeidx])
-            # toadd =np.hstack((
-            #     np.apply_along_axis(fun1,
-            #                         1, data[:,timeidx[:center]]),
-            #     np.apply_along_axis(fun2,
-            #                         1, data[:,timeidx[center:]])))
-            # except IndexError:
-            #     print 'index error for event ' + str(i)
-            #     print 'xs1: ' + str(xs1)
-            #     print 'xs2: ' + str(xs2)
-            #     print 'timeidx: ' + str(timeidx)
-            #     print 'thisevent: ' + str(thisevent)
-            #     print 'center: ' + str(center)
-            #     print 'next event: ' + str(events[i+1])
-            #     toadd = np.zeros(data[:,timeidx].shape)
             eta += toadd
         else:
             lpad = midpt - center
