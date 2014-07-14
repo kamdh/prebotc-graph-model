@@ -22,8 +22,8 @@ def parse_args(argv):
     transient = 40000 # ms
     spike_thresh = -20 # mV
     f_sigma = 20 # ms
-    butter_high = 10 # Hz
-    butter_low = 1 # Hz
+    butter_high = 4 # Hz
+    butter_low = -np.inf # Hz
     bin_width = 20 # ms
     cutoff = 0.5
     peak_order = 20
@@ -143,19 +143,46 @@ def spikes_filt(spike_mat, samp_freq, f_sigma, butter_freq):
         #                                  mode='same')
         return spike_fil
     def filt_butter(data, samp_freq, butter_freq, axis=-1):
-        samp_freq *= 1e-3 # ms -> s, filter defn in terms of Hz
+        '''
+        Filter data with a 2nd order butterworth filter.
+        
+        Parameters
+        ==========
+          data: ndarray
+          samp_freq: sampling period (s)
+          butter_freq: [cutoff_low, cutoff_high] (Hz), can be infinite
+          axis (optional): axis along which to filter, default = -1
+        Returns
+        =======
+          filtNs: filtered version of data
+        '''
         order = 2
         ny = 0.5 / samp_freq # Nyquist frequency
-        cof = butter_freq # cutoff freq, in Hz
-        cof1 = cof / ny
-        b, a = scipy.signal.butter(order, cof1, btype='band')
-        filtNs = scipy.signal.filtfilt(b, a, data, axis=axis)
+        cof = butter_freq / ny # normalized cutoff freq
+        if np.isneginf(cof[0]) and np.isfinite(cof[1]):
+            # lowpass
+            cof1 = cof[1]
+            b, a = scipy.signal.butter(order, cof1, btype='low')
+            filtNs = scipy.signal.filtfilt(b, a, data, axis=axis)
+        elif np.isfinite(cof[0]) and np.isinf(cof[1]):
+            # highpass
+            cof1 = cof[0]
+            b, a = scipy.signal.butter(order, cof1, btype='high')
+            filtNs = scipy.signal.filtfilt(b, a, data, axis=axis)
+        elif np.isfinite(cof[0]) and np.isfinite(cof[1]):
+            # bandpass
+            cof1 = cof
+            b, a = scipy.signal.butter(order, cof1, btype='band')
+            filtNs = scipy.signal.filtfilt(b, a, data, axis=axis)
+        else:
+            raise Exception('filt_butter called with bad cutoff frequency')
         filtNs /= samp_freq
         return filtNs
     spike_fil = filt_gauss(spike_mat, samp_freq, f_sigma=f_sigma) 
     int_signal = filt_butter(np.mean(spike_mat, axis=0), 
-                             samp_freq, butter_freq)
-    spike_fil_butter = filt_butter(spike_fil, samp_freq, butter_freq, axis=1)
+                             samp_freq*1e-3, butter_freq)
+    spike_fil_butter = filt_butter(spike_fil, samp_freq*1e-3, 
+                                   butter_freq, axis=1)
     return spike_fil, int_signal, spike_fil_butter
 
 def bin_spikes(spike_mat, bin_width, dt):
@@ -543,7 +570,8 @@ def main(argv = None):
                                'graph_adj': graph_adj,
                                'ops': ops,
                                'op_angle_mean': op_angle_mean,
-                               'op_angle_std': op_angle_std
+                               'op_angle_std': op_angle_std,
+                               'pop_burst_peak': pop_burst_peak
                                },
                       oned_as='column'
                      )
