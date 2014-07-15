@@ -47,7 +47,7 @@ print "num rep: " + str(numRep)
 
 ## setup the collected arrays
 chiArray = np.zeros((numk, numpI), dtype=np.float)
-ldutyCycle = np.zeros((numk, numpI), dtype=np.float)
+dutyCycle = np.zeros((numk, numpI), dtype=np.float)
 muIBI = np.zeros((numk, numpI), dtype=np.float)
 cvIBI = np.zeros((numk, numpI), dtype=np.float)
 muB = np.zeros((numk, numpI), dtype=np.float)

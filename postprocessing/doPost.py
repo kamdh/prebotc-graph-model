@@ -171,12 +171,11 @@ def spikes_filt(spike_mat, samp_freq, f_sigma, butter_freq):
             filtNs = scipy.signal.filtfilt(b, a, data, axis=axis)
         elif np.isfinite(cof[0]) and np.isfinite(cof[1]):
             # bandpass
-            cof1 = cof
-            b, a = scipy.signal.butter(order, cof1, btype='band')
+            b, a = scipy.signal.butter(order, cof, btype='band')
             filtNs = scipy.signal.filtfilt(b, a, data, axis=axis)
         else:
             raise Exception('filt_butter called with bad cutoff frequency')
-        filtNs /= samp_freq
+        filtNs /= samp_freq # normalize to rate
         return filtNs
     spike_fil = filt_gauss(spike_mat, samp_freq, f_sigma=f_sigma) 
     int_signal = filt_butter(np.mean(spike_mat, axis=0), 
