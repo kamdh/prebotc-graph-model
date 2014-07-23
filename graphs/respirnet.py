@@ -44,15 +44,17 @@ def er_prebot(n, p, pTypes, pI, gE, gI):
                             for x in graph.edges()})
     return graph
 
-def er_prebot_bot(n, p_mat_I, p_mat_E, pTypes, pI, gE, gI):
+def er_prebot_bot(n0, n1, p_mat_I, p_mat_E, pTypes, pI, gE, gI):
     '''
     Generate a model for preBot and Bot coupled respiratory groups.
     This is a signed (E-I) version of a 2-group stochastic block model.
 
     Parameters
     ==========
-    n: int
-        Number of nodes in each complex, preBot and Bot
+    n0: int
+        Number of nodes in 1st complex (preBot)
+    n1: int
+        Number of nodes in 2nd complex (Bot)
     p_mat_I: 2x2 ndarray
         Probability of inhibitory projections
     p_mat_E: 2x2 ndarray
@@ -66,7 +68,8 @@ def er_prebot_bot(n, p_mat_I, p_mat_E, pTypes, pI, gE, gI):
     gI: float
         Max conductance of inhibitory connections
     '''
-    assert isinstance(n, int), 'n should be integer'
+    assert isinstance(n0, int), 'n0 should be integer'
+    assert isinstance(n1, int), 'n1 should be integer'
     assert p_mat_I.ndim == 2 and \
         np.all( np.array(p_mat_I.shape) == 2 ), 'p_mat_I wrong shape'
     assert np.all( p_mat_I <= 1 ) and np.all( p_mat_I >= 0 ), \
@@ -80,19 +83,21 @@ def er_prebot_bot(n, p_mat_I, p_mat_E, pTypes, pI, gE, gI):
     assert isinstance(gE, float), 'gE should be float'
     assert isinstance(gI, float), 'gI should be float'
 
+    print p_mat_E
+    print p_mat_I
     # setup nodes
-    graph = nx.empty_graph(2*n)
+    graph = nx.empty_graph(n0+n1)
     graph = nx.DiGraph(graph)
-    nx.set_node_attributes(graph, 'respir_area', {x: 0 if x < n else 1
+    nx.set_node_attributes(graph, 'respir_area', {x: 0 if x < n1 else 1
                                                   for x in graph.nodes()})
     nx.set_node_attributes(graph, 'type', 
                            {x: assign_type(pTypes) for x in graph.nodes()})
     nx.set_node_attributes(graph, 'inh',
                            {x: assign_inh(pI) for x in graph.nodes()})
     # now add edges
-    edges = itertools.permutations(range(2*n),2)
+    edges = itertools.permutations(range(n0+n1),2)
     for e in edges:
-        # draw edges with differing probabilities depending on types of endpoints
+        # draw edges with differing probabilities depending on type of endpts
         u = graph.node[ e[0] ]
         v = graph.node[ e[1] ]
         area1 = u['respir_area']

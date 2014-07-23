@@ -32,7 +32,7 @@ def parse_args(argv):
                         help='final time (default: %(default)s ms)')
     parser.add_argument('-dt', type=float, default=dt,
                         help='time step (default: %(default)s ms)')
-    parser.add_argument('param', help='parameter pkl file')
+    parser.add_argument('param', help='parameter json file')
     parser.add_argument('graph', help='graph gml file')
     parser.add_argument('output', help='output (.mat) filename')
     parser.add_argument('--abs_err', '-a', type=float, 
@@ -52,7 +52,7 @@ def parse_args(argv):
                         help='silence output (for running in batch mode)')
     parser.add_argument('--spike_thresh', type=float,
                         default=spike_thresh,
-                        help='spike threshold (default:%(default)s mV)')
+                        help='spike threshold (default: %(default)s mV)')
     parser.add_argument('--refractory', type=float, default=refractory,
                         help='refractory period (default: %(default)s ms)')
     args = parser.parse_args(argv[1:])

@@ -41,22 +41,22 @@ def parse_args(argv):
     parser.add_argument('--sec', '-s', action='store_true',
                         help='time units are in seconds (default: ms)')
     parser.add_argument('--volt', '-V', action='store_true',
-                        help=('file contains voltage traces '
-                              '(default: sparse spike trains)'))
+                        help='file contains voltage traces ' + \
+                        '(default: sparse spike trains)')
     parser.add_argument('--thresh', 
                         help='spike threshold, mV (default: %(default)s)',
                         type=float, default=spike_thresh) 
     parser.add_argument('--fsig', '-f', 
-                        help=('filter standard deviation, ms '
-                        '(default: %(default)s)'),
+                        help='filter standard deviation, ms ' + \
+                        '(default: %(default)s)',
                         type=float, default=f_sigma)
     parser.add_argument('--butter_high', 
-                        help=('Butterworth filter upper cutoff frequency, Hz '
-                              '(default: %(default)s)'), 
-                       type=float, default=butter_high)
+                        help='Butterworth filter upper cutoff frequency, Hz ' +\
+                        '(default: %(default)s)', 
+                        type=float, default=butter_high)
     parser.add_argument('--butter_low', 
-                        help=('Butterworth filter lower cutoff frequency, Hz '
-                              '(default: %(default)s)'),
+                        help='Butterworth filter lower cutoff frequency, Hz '+\
+                        '(default: %(default)s)',
                         type=float, default=butter_low)
     parser.add_argument('--bin_width', '-b', 
                         help='bin width, ms (default: %(default)s)',
@@ -65,16 +65,17 @@ def parse_args(argv):
                         help='burst cutoff parameter (default: %(default)s)',
                         type=float, default=cutoff)
     parser.add_argument('--peak_order', 
-                        help=('maximum order for defining peak number of bins ',
-                              '(default: %(default)s)'),
+                        help='maximum order for defining peak number of bins'+\
+                        ' (default: %(default)s)',
                         type=int, default=peak_order)
     parser.add_argument('--eta_norm_pts',
-                        help=('half the number of points in [-.5, .5] onto ',
-                              'which to interpolate (default: %(default)s)'),
+                        help='half the number of points in [-.5, .5] onto '+\
+                        'which to interpolate (default: %(default)s)',
                         type=int, default=eta_norm_pts)
     parser.add_argument('--op_abs_thresh', 
-                        help=('threshold order parameter magnitude above which ',
-                              'to calculate statistics'),
+                        help='threshold order parameter magnitude above '+\
+                        'which to calculate statistics ' +\
+                        '(default: %(default)s)',
                         type=float, default=op_abs_thresh)
     args = parser.parse_args(argv[1:])
     return (args.sim, args.output, args.transient, args.sec, args.thresh,
