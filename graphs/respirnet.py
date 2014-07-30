@@ -88,7 +88,7 @@ def er_prebot_bot(n0, n1, p_mat_I, p_mat_E, pTypes, pI, gE, gI):
     # setup nodes
     graph = nx.empty_graph(n0+n1)
     graph = nx.DiGraph(graph)
-    nx.set_node_attributes(graph, 'respir_area', {x: 0 if x < n1 else 1
+    nx.set_node_attributes(graph, 'respir_area', {x: 0 if x < n0 else 1
                                                   for x in graph.nodes()})
     nx.set_node_attributes(graph, 'type', 
                            {x: assign_type(pTypes) for x in graph.nodes()})

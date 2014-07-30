@@ -4,17 +4,27 @@ import respirnet
 import numpy as np
 import networkx as nx
 
+pTypes = [0, 0.25, 0.45, 0.3]
 
-n0 = 200
-n1 = 100
+n0 = 300
+n1 = 300
 pI = 0.2
 gE = 2.5
-gI = 2.5
-pTypes = [0, 0.25, 0.45, 0.3]
+gI = 5.0
 a = 3.0
 b = 0.5
-c = 1.0
+c = 0.5
 d = 3.0
+# these work:
+# n0 = 200
+# n1 = 100
+# pI = 0.2
+# gE = 2.5
+# gI = 5.0
+# a = 3.0
+# b = 0.5
+# c = 0.5
+# d = 3.0
 
 pMatE = np.array([(a/(n0-1), b/(n1-1)),
                   (b/(n0-1), a/(n1-1))])
