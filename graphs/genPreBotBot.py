@@ -6,15 +6,15 @@ import networkx as nx
 
 pTypes = [0, 0.25, 0.45, 0.3]
 
-n0 = 300
-n1 = 300
+n0 = 200
+n1 = 200
 pI = 0.2
-gE = 2.5
+gE = 2.0
 gI = 5.0
-a = 3.0
+a = 2.5
 b = 0.5
 c = 0.5
-d = 3.0
+d = 2.5
 # these work:
 # n0 = 200
 # n1 = 100
