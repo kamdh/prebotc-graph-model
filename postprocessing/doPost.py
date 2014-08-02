@@ -87,8 +87,11 @@ def chop_transient(data, transient, dt):
     '''
     Remove a transient from the data
     '''
-    firstIdx = int(np.ceil(transient / dt) - 1)
-    return data[:,firstIdx:]
+    if transient > 0:
+        firstIdx = int(np.ceil(transient / dt) - 1)
+        return data[:,firstIdx:]
+    else:
+        return data
 
 def find_spikes(data, threshold):
     '''

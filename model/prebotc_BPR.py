@@ -11,6 +11,7 @@ import os
 from scipy import weave
 from scipy.weave import converters
 import math  # allow functions in math module
+from scipy.io import loadmat
 
 # constants
 num_eqns_per_vertex = 5
@@ -25,15 +26,15 @@ def params(paramFn):
             # then it should be python code for a function
             code = "lambda t: " + var
             # below is not safe, but we trust the param file
-            bytecode = compile( code, paramFn, 'eval' )
-            fun = eval( bytecode )
+            bytecode = compile(code, paramFn, 'eval')
+            fun = eval(bytecode)
         else:
             raise Exception("wrong type for I_aps in " + paramFn)
         return fun
     with open(paramFn) as f:
         my_params = json.load(f)
-    my_params["I_apsE"] = parse_I_aps( my_params["I_apsE"], paramFn )
-    my_params["I_apsI"] = parse_I_aps( my_params["I_apsI"], paramFn )
+    my_params["I_apsE"] = parse_I_aps(my_params["I_apsE"], paramFn)
+    my_params["I_apsI"] = parse_I_aps(my_params["I_apsI"], paramFn)
     return my_params
 
 def graph(graphFn):
@@ -45,27 +46,27 @@ def graph(graphFn):
     vertex_types = np.array(nx.get_node_attributes(g, 'type').values(),
                             dtype=np.int)
     vertex_inh = np.array(nx.get_node_attributes(g, 'inh').values(),
-                          dtype=np.int )
+                          dtype=np.int)
     vertex_respir_area = np.array(
         nx.get_node_attributes(g, 'respir_area').values(), dtype=np.int)
     # construct an edge list
-    edge_list = np.zeros( (num_edges, 3) )
+    edge_list = np.zeros((num_edges, 3))
     # also a lookup table for in-edges
     # this requires a degree list
-    in_degrees = np.array( g.in_degree().values(), dtype=np.int )
-    max_degree = np.max( in_degrees )
+    in_degrees = np.array(g.in_degree().values(), dtype=np.int)
+    max_degree = np.max(in_degrees)
     # "ragged" array of in-edges
-    in_edges = np.zeros( (num_vertices, max_degree), dtype=np.int )
+    in_edges = np.zeros((num_vertices, max_degree), dtype=np.int)
     if num_edges > 0:
         gsyn_props = nx.get_edge_attributes(g, 'gsyn')
     else:
         gsyn_props = []
     # for looping
-    in_edge_ct = np.zeros( (num_vertices,), dtype=np.int )
+    in_edge_ct = np.zeros((num_vertices,), dtype=np.int)
     i = 0
     for e in g.edges():
-        source_index = int( e[0] )
-        target_index = int( e[1] )
+        source_index = int(e[0])
+        target_index = int(e[1])
         is_inh = vertex_inh[ source_index ]
         if is_inh == 1:
             inh_mult = -1
@@ -89,7 +90,7 @@ def ics(num_vertices, num_edges, random=True):
     # state vector y encodes vertex and edge data
     y = np.zeros(N)
     if random:
-        for i in range( num_vertices ):
+        for i in range(num_vertices):
             # vertex data in 0:num_eqns_per_vertex*num_vertices-1
             j = range(i*num_eqns_per_vertex, (i+1)*num_eqns_per_vertex)
             # ranges below come from range of variables in sample output run
@@ -101,12 +102,12 @@ def ics(num_vertices, num_edges, random=True):
                 (0.93 - 0.46) * np.random.random_sample() + 0.46
             ]
         offset = num_vertices*num_eqns_per_vertex
-        for i in range( num_edges ):
+        for i in range(num_edges):
             j = range(offset + i*num_eqns_per_edge,
                       offset + (i+1)*num_eqns_per_edge)
             y[j] = (0.0025 - 0) * np.random.random_sample() + 0
     else:
-        for i in range( num_vertices ):
+        for i in range(num_vertices):
             # vertex data in 0:num_eqns_per_vertex*num_vertices-1
             j = range(i*num_eqns_per_vertex, (i+1)*num_eqns_per_vertex)
             y[j] = [
@@ -117,11 +118,18 @@ def ics(num_vertices, num_edges, random=True):
                  0.93
                  ]
         offset = num_vertices*num_eqns_per_vertex
-        for i in range( num_edges ):
+        for i in range(num_edges):
             j = range(offset + i*num_eqns_per_edge,
                       offset + (i+1)*num_eqns_per_edge)
             y[j] = 0.0000011
-    return y, N
+    return y
+
+def load_ics(filename):
+    ydict = loadmat(filename, variable_names=['finalState',
+                                              'graphFn'])
+    y = ydict['finalState']
+    graph_fn = ydict['graphFn']
+    return y, graph_fn
 
 def voltages(y, num_vertices):
     V = y[ 0:(num_vertices*num_eqns_per_vertex):num_eqns_per_vertex ]
@@ -129,13 +137,13 @@ def voltages(y, num_vertices):
 
 def spiking(y, num_vertices, thresh):
     V = voltages(y, num_vertices)
-    spiking_neurons = np.where( V > thresh )[0]
+    spiking_neurons = np.where(V > thresh)[0]
     return spiking_neurons
 
-def rhs( t, y,
+def rhs(t, y,
          graph_params,
          params
-         ):
+        ):
     # unpack all of the parameters
     (vertex_types, vertex_inh, vertex_respir_area, edge_list,
      in_degrees, in_edges) = graph_params
@@ -220,13 +228,13 @@ for (i=0; i<num_vertices; i++) {
     throw \"is_inh returned nonsensical result\";
   }
   //// activation/inactivation variables
-  minf  = 1/(1+exp(( y(j) - vm )/sm));
-  ninf  = 1/(1+exp(( y(j) - vn )/sn));
-  minfp = 1/(1+exp(( y(j) - vmp )/smp));
-  hinf  = 1/(1+exp(( y(j) - vh )/sh));
+  minf  = 1/(1+exp((y(j) - vm)/sm));
+  ninf  = 1/(1+exp((y(j) - vn)/sn));
+  minfp = 1/(1+exp((y(j) - vmp)/smp));
+  hinf  = 1/(1+exp((y(j) - vh)/sh));
   //// time constants
-  taun = taunb/cosh(( y(j) - vn )/(2*sn));
-  tauh = tauhb/cosh(( y(j) - vh )/(2*sh));
+  taun = taunb/cosh((y(j) - vn)/(2*sn));
+  tauh = tauhb/cosh((y(j) - vh)/(2*sh));
   //// calculate currents
   I_na  = gna * pow(minf, 3) * (1 - y(j+1)) * (y(j) - vna);
   I_k   = gk * pow(y(j+1), 4) * (y(j) - vk);
@@ -238,30 +246,30 @@ for (i=0; i<num_vertices; i++) {
   //// Fluxes in and out of ER
   //// l is fraction of open IP3 channels
   Ce = (Ct - y(j+3))/sigma;
-  J_ER_in=(LL + P * pow( (I*y(j+3)*y(j+4))/( (I+Ki)*(y(j+3)+Ka) ), 3) )
+  J_ER_in=(LL + P * pow((I*y(j+3)*y(j+4))/((I+Ki)*(y(j+3)+Ka)), 3))
              *(Ce - y(j+3));
-  J_ER_out=Ve * pow(y(j+3), 2) / ( pow(Ke, 2) + pow(y(j+3), 2) );
+  J_ER_out=Ve * pow(y(j+3), 2) / (pow(Ke, 2) + pow(y(j+3), 2));
   //// calculate synaptic current I_syn
   I_syn = 0.0;
   for (k=0; k < (int)in_degrees(i); k++) {
     int edgeid = (int) in_edges(i,k);
-    double gSyn = edge_list( edgeid, 2 );
-    double synVar = y( offset + edgeid );
-    if ( gSyn < 0.0 ) {
+    double gSyn = edge_list(edgeid, 2);
+    double synVar = y(offset + edgeid);
+    if (gSyn < 0.0) {
       // inhibitory
-      I_syn += abs(gSyn) * synVar * ( y(j) - vsynI );
+      I_syn += abs(gSyn) * synVar * (y(j) - vsynI);
     } 
     else {
       // excitatory
-      I_syn += abs(gSyn) * synVar * ( y(j) - vsynE );
+      I_syn += abs(gSyn) * synVar * (y(j) - vsynE);
     }
   }
-  if ( (int)in_degrees(i) == 0 ) {
+  if ((int)in_degrees(i) == 0) {
     I_syn = 0.0;
   }
   //// set the derivatives
   // v'
-  dydt(j) = -( I_k + I_na + I_nap + I_l - I_aps + I_can + I_syn ) / Cms;
+  dydt(j) = -(I_k + I_na + I_nap + I_l - I_aps + I_can + I_syn) / Cms;
   // n'
   dydt(j+1) = (ninf - y(j+1))/taun;
   // h'
@@ -276,11 +284,11 @@ for (i=0; i<num_edges; i++) {
   double v_source, v_target, msyninf;
   int sourceid = (int) edge_list(i, 0);
   double gsyn = edge_list(i, 2);
-  v_source = y( sourceid * num_eqns_per_vertex );
+  v_source = y(sourceid * num_eqns_per_vertex);
   //v_target = edge_list(i, 1);
   j = offset + i;
-  msyninf = 1/( 1 + exp( ( v_source - vsyn )/ssyn ) );
-  dydt(j) = ( (1 - y(j)) * msyninf - ksyn * y(j) ) / tausyn;
+  msyninf = 1/(1 + exp((v_source - vsyn)/ssyn));
+  dydt(j) = ((1 - y(j)) * msyninf - ksyn * y(j)) / tausyn;
 }
 """
     weave.inline(code, 
@@ -297,7 +305,7 @@ for (i=0; i<num_edges; i++) {
                  type_converters = converters.blitz, 
                  compiler='gcc',
                  headers=['<math.h>']
-                 )
+                )
     return dydt
 
 # extra business

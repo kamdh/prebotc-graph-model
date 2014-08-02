@@ -8,8 +8,9 @@ import scipy.sparse
 import scipy.integrate
 import time
 import argparse
-import scipy.io
+from scipy.io import savemat
 import progressbar
+import warnings
 
 def parse_args(argv):
     # # defaults for original model with seconds as time units
@@ -55,28 +56,40 @@ def parse_args(argv):
                         help='spike threshold (default: %(default)s mV)')
     parser.add_argument('--refractory', type=float, default=refractory,
                         help='refractory period (default: %(default)s ms)')
+    parser.add_argument('--ics', default='random', 
+                        help='set IC''s, filename or ''%(default)s'' (default)')
     args = parser.parse_args(argv[1:])
     assert not ( args.save_spikes and args.save_full ), \
         "only one of --save_spikes and --save_full can be set"
     if args.save_spikes and args.dt > 1:
-        print 'Warning, dt is possibly too large to resolve spikes'
+        warnings.warn('dt is possibly too large to resolve spikes')
     return args.t0, args.tf, args.dt, args.param, args.graph, \
         args.output, args.abs_err, args.rel_err, args.save_full, \
-        args.save_spikes, args.quiet, args.spike_thresh, args.refractory
+        args.save_spikes, args.quiet, args.spike_thresh, \
+        args.refractory, args.ics
 
 def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    (t0, tf, dt, paramFn, graphFn, outFn, abs_error, rel_error, save_full, 
-     save_spikes, quiet, spike_thresh, refractory) = parse_args(argv)
+    (t0, tf, dt, param_fn, graph_fn, outFn, abs_error, rel_error, save_full, 
+     save_spikes, quiet, spike_thresh, refractory, ic_str) = parse_args(argv)
     # compute the number of steps required
     Nstep = np.ceil(tf/dt)
     if not quiet:
         print "Loading parameters, graph, and setting up IC's"
-    my_params = prebotc.params(paramFn)
-    num_vertices, num_edges, graph_params = prebotc.graph(graphFn)
-    y, N = prebotc.ics(num_vertices, num_edges)
+    my_params = prebotc.params(param_fn)
+    num_vertices, num_edges, graph_params = prebotc.graph(graph_fn)
+    if ic_str == 'random':
+        y = prebotc.ics(num_vertices, num_edges)
+    else:
+        y, graph_fn_loaded = prebotc.load_ics(ic_str)
+        if os.path.abspath(graph_fn_loaded) != os.path.abspath(graph_fn):
+            warnings.warn(('simulation is running on a graph which differs'
+                           'from the ics'))
+            print graph_fn_loaded
+            print graph_fn
+    N = y.size
     #y, N = prebotc.ics(num_vertices, num_edges, random=False)
     # rhs of ODE with parameters evaluated
     # f is the rhs with parameters evaluated
@@ -163,19 +176,19 @@ def main(argv=None):
     else:
         save_str = 'V'
     # save output
-    scipy.io.savemat(outFn, 
-                     mdict={'Y': save_state,
-                            'dt': dt,
-                            't0': t0,
-                            'tf': tf,
-                            'paramFn': os.path.abspath(paramFn),
-                            'graphFn': os.path.abspath(graphFn),
-                            'absErr': abs_error,
-                            'relErr': rel_error,
-                            'saveStr': save_str,
-                            'finalState': y
-                            },
-                     oned_as = 'column')
+    savemat(outFn, 
+            mdict={'Y': save_state,
+                   'dt': dt,
+                   't0': t0,
+                   'tf': tf,
+                   'paramFn': os.path.abspath(param_fn),
+                   'graphFn': os.path.abspath(graph_fn),
+                   'absErr': abs_error,
+                   'relErr': rel_error,
+                   'saveStr': save_str,
+                   'finalState': y
+               },
+            oned_as = 'column')
     if not quiet:
         elapsed = time.time() - t
         print "Done!\nSave time: %1.2fs" % elapsed
