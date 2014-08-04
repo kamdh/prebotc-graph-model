@@ -19,10 +19,10 @@ from sklearn.decomposition import NMF
 
 def parse_args(argv):
     # defaults
-    transient = 40000 # ms
-    spike_thresh = -20 # mV
-    f_sigma = 20 # ms
-    butter_high = 4 # Hz
+    transient = 20000 # ms
+    spike_thresh = -20.0 # mV
+    f_sigma = 20.0 # ms
+    butter_high = 4.0 # Hz
     butter_low = -np.inf # Hz
     bin_width = 20 # ms
     cutoff = 0.5
@@ -97,7 +97,7 @@ def find_spikes(data, threshold):
     '''
     Find spikes in voltage data by taking relative maxima
     '''
-    indices = scipy.signal.argrelmax(data, axis=1) # 1st and 2nd coords of maxima
+    indices = scipy.signal.argrelmax(data, axis=1) # coords 1-2 of maxima
     mask = np.where(data[indices] > threshold)
     new_indices = (indices[0][mask],
                    indices[1][mask])
