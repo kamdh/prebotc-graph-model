@@ -5,6 +5,7 @@ A model of the pre-Botzinger complex, implementing multiple neuron types and arb
 
 subdirectories
 ==============
-* model - python code which integrates the odes
 * graphs - code to generate graphs
+* model - python code which integrates the odes
+* pipeline - sequential commands to run simulation and analysis
 * postprocessing - processes the output from the model
