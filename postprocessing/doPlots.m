@@ -30,7 +30,7 @@ partics = {'er_n300_k1.0_deg_pI0.00_rep1',...
            'er_n300_k6.0_deg_pI0.30_rep1', ...
            'er_n300_k6.0_deg_pI1.00_rep1' 
           };
-projName = 'random_fine_2';
+projName = 'random_fine_g_sweep';
 opThresh = 0.2;
 
 %% start processing
