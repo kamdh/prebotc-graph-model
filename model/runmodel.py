@@ -71,7 +71,6 @@ def parse_args(argv):
 def main(argv=None):
     if argv is None:
         argv = sys.argv
-
     (t0, tf, dt, param_fn, graph_fn, outFn, abs_error, rel_error, save_full, 
      save_spikes, quiet, spike_thresh, refractory, ic_str) = parse_args(argv)
     # compute the number of steps required

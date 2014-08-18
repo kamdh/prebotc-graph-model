@@ -120,7 +120,7 @@ def spikes_filt(spike_mat, samp_freq, f_sigma, butter_freq):
     Parameters
     ==========
     spike_mat: the numneuron x time matrix of spikes
-    samp_freq: sample frequency
+    samp_freq: period (in ms) between measurements in spike_mat
     f_sigma:   variance of gaussian
     butter_freq: butterworth filter cutoff frequency(s)
 
@@ -495,12 +495,12 @@ def main(argv = None):
     bins, spike_mat_bin = bin_spikes(spike_mat, bin_width, dt)
     ## Filter spike raster for integrated activity, filtered spike trains
     # spike_fil, butter_int = spikes_filt(spike_mat, dt, f_sigma, butter_freq)
-    spike_fil_bin, butter_int_bin, spike_fil_butter = spikes_filt(spike_mat_bin, 
-                                                                  dt*bin_width, 
-                                                                  f_sigma, 
-                                                                  butter_freq)
+    spike_fil_bin,butter_int_bin,spike_fil_butter = spikes_filt(spike_mat_bin, 
+                                                                dt*bin_width, 
+                                                                f_sigma, 
+                                                                butter_freq)
     ## Peri-neuron time histogram
-    psth_bin = np.sum(spike_mat_bin, axis=0)
+    psth_bin = np.sum(spike_mat_bin,axis=0)
     ## Synchrony measures from autocorrelation
     if are_volts:
         chi, autocorr = synchrony_stats(data, dt)
@@ -512,6 +512,8 @@ def main(argv = None):
      burst_lengths, burst_start_locs, burst_peak_locs, burst_peaks, bursting, 
      bad_bursts) = burst_stats(butter_int_bin, cutoff, dt*bin_width)
     ## New burst stats
+    avg_firing_rate = np.sum(spike_mat_bin,axis=None)/((bins[-1]-bins[0])*
+                                                        num_neurons*1000.0)
     ## Compute the population burst peaks
     pop_burst_peak = scipy.signal.argrelmax(butter_int_bin, order=peak_order)[0]
     ## Compute event triggered averages
@@ -574,7 +576,8 @@ def main(argv = None):
                                'ops': ops,
                                'op_angle_mean': op_angle_mean,
                                'op_angle_std': op_angle_std,
-                               'pop_burst_peak': pop_burst_peak
+                               'pop_burst_peak': pop_burst_peak,
+                               'avg_firing_rate': avg_firing_rate
                                },
                       oned_as='column'
                      )

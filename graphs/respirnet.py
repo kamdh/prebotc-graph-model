@@ -44,6 +44,20 @@ def er_prebot(n, p, pTypes, pI, gE, gI):
                             for x in graph.edges()})
     return graph
 
+def complete_prebot(n, pTypes, pI, gE, gI):
+    assert isinstance(n, int), 'n should be integer'
+    assert 0 <= pI and pI <= 1, 'pI out of range'
+    assert sum(pTypes) == 1, 'pTypes must sum to 1'
+    graph = nx.complete_graph(n, nx.DiGraph())
+    nx.set_node_attributes(graph, 'type', 
+                           {x: assign_type(pTypes) for x in graph.nodes()})
+    nx.set_node_attributes(graph, 'inh',
+                           {x: assign_inh(pI) for x in graph.nodes()})
+    nx.set_edge_attributes(graph, 'gsyn', 
+                           {x: assign_gsyn(graph, x, gE, gI)
+                            for x in graph.edges()})
+    return graph
+
 def er_prebot_bot(n0, n1, p_mat_I, p_mat_E, pTypes, pI, gE, gI):
     '''
     Generate a model for preBot and Bot coupled respiratory groups.
