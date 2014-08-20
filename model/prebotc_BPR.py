@@ -128,7 +128,7 @@ def load_ics(filename):
     ydict = loadmat(filename, variable_names=['finalState',
                                               'graphFn'])
     y = ydict['finalState']
-    graph_fn = ydict['graphFn']
+    graph_fn = ydict['graphFn'][0]
     return y, graph_fn
 
 def voltages(y, num_vertices):
