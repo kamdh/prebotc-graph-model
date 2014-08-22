@@ -59,7 +59,7 @@ def parse_args(argv):
     parser.add_argument('--ics', default='random', 
                         help='set IC''s, filename or ''%(default)s'' (default)')
     args = parser.parse_args(argv[1:])
-    assert not ( args.save_spikes and args.save_full ), \
+    assert not (args.save_spikes and args.save_full), \
         "only one of --save_spikes and --save_full can be set"
     if args.save_spikes and args.dt > 1:
         warnings.warn('dt is possibly too large to resolve spikes')
@@ -76,18 +76,22 @@ def main(argv=None):
     # compute the number of steps required
     Nstep = np.ceil(tf/dt)
     if not quiet:
-        print "Loading parameters, graph, and setting up IC's"
+        print("Loading parameters, graph, and setting up ICs")
     my_params = prebotc.params(param_fn)
     num_vertices, num_edges, graph_params = prebotc.graph(graph_fn)
     if ic_str == 'random':
+        if not quiet:
+            print('Setting random ICs')
         y = prebotc.ics(num_vertices, num_edges)
     else:
+        if not quiet:
+            print('Loading ICs from ' + ic_str)
         y, graph_fn_loaded = prebotc.load_ics(ic_str)
         if os.path.abspath(graph_fn_loaded) != os.path.abspath(graph_fn):
             warnings.warn(('simulation is running on a graph which differs'
                            'from the ics'))
-            print graph_fn_loaded
-            print graph_fn
+            print(graph_fn_loaded)
+            print(graph_fn)
     N = y.size
     #y, N = prebotc.ics(num_vertices, num_edges, random=False)
     # rhs of ODE with parameters evaluated
@@ -130,7 +134,7 @@ def main(argv=None):
     #                  rtol = rel_error,
     #                  atol = abs_error)
     if not quiet:
-        print "Running integration loop...."
+        print("Running integration loop....")
         t = time.time()
         bar_updates = 100
         widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()]
@@ -164,10 +168,10 @@ def main(argv=None):
     if not quiet:
         bar.finish()
         elapsed = time.time() - t
-        print "Done!\nElapsed: %1.2fs" % elapsed
+        print("Done!\nElapsed: %1.2fs" % elapsed)
         # Time saving
         t = time.time()
-        print "Saving output...."
+        print("Saving output....")
     if save_full:
         save_str = 'full'
     elif save_spikes:
@@ -185,12 +189,13 @@ def main(argv=None):
                    'absErr': abs_error,
                    'relErr': rel_error,
                    'saveStr': save_str,
-                   'finalState': y
+                   'finalState': y,
+                   'icStr': ic_str
                },
             oned_as = 'column')
     if not quiet:
         elapsed = time.time() - t
-        print "Done!\nSave time: %1.2fs" % elapsed
+        print("Done!\nSave time: %1.2fs" % elapsed)
 
 # run the main stuff
 if __name__ == '__main__':
