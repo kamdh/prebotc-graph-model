@@ -11,6 +11,7 @@ import argparse
 from scipy.io import savemat
 import progressbar
 import warnings
+from IPython import embed
 
 def parse_args(argv):
     # # defaults for original model with seconds as time units
@@ -102,19 +103,21 @@ def main(argv=None):
     # data structure to output, timeseries or sparse raster
     if save_full:
         # all state variables
-        save_state = np.zeros( (N, Nstep+1) )
+        save_state = np.zeros((N, Nstep+1))
     elif save_spikes:
         # just spike times, as sparse matrix
         # not boolean because type conversion bug in matlab output
-        save_state = scipy.sparse.dok_matrix( (num_vertices, Nstep+1) )
-        last_spike = np.ones( num_vertices ) * (-np.inf)
+        save_state = scipy.sparse.dok_matrix((num_vertices, Nstep+1))
+        last_spike = np.ones(num_vertices) * (-np.inf)
     else:
         # timeseries of spikes
-        save_state = np.zeros( (num_vertices, Nstep+1) ) 
+        save_state = np.zeros((num_vertices, Nstep+1)) 
     r = scipy.integrate.ode(f)
     r.set_initial_value(y, t0)
-    # # other integration methods
-    # # method 1: BDF
+    ## Default integration method is VODE with method 'adams' (implicit)
+    ##
+    ## Other integration methods
+    ## method 1: BDF
     # r.set_integrator(
     #     'vode', 
     #     method='bdf', 
@@ -123,16 +126,17 @@ def main(argv=None):
     #     rtol= rel_error,
     #     atol= abs_error
     #     )
-    # # method 2: Dormand-Price
+    ## method 2: Dormand-Price
     # r.set_integrator(
     #     'dopri5', 
     #     rtol = rel_error,
     #     atol = abs_error
     #     )
-    # # method 3: VODE
+    ## method 3: VODE
     # r.set_integrator('vode',
     #                  rtol = rel_error,
     #                  atol = abs_error)
+    embed()
     if not quiet:
         print("Running integration loop....")
         t = time.time()

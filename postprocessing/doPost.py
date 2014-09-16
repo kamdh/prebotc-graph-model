@@ -128,7 +128,6 @@ def spikes_filt(spike_mat, samp_freq, f_sigma, butter_freq):
     =======
     spike_fil: gaussian filtered matrix, same shape as spike_mat
     int_signal: butterworth filtered population timeseries
-    spike_fil_butter: butterworth filtered matrix, same shape as spike_mat
     '''
     def filt_window_gauss(samp_freq, std = 20, width = None, normalize = 1):
         if width is None:
@@ -184,9 +183,10 @@ def spikes_filt(spike_mat, samp_freq, f_sigma, butter_freq):
     spike_fil = filt_gauss(spike_mat, samp_freq, f_sigma=f_sigma) 
     int_signal = filt_butter(np.mean(spike_mat, axis=0), 
                              samp_freq*1e-3, butter_freq)
-    spike_fil_butter = filt_butter(spike_fil, samp_freq*1e-3, 
-                                   butter_freq, axis=1)
-    return spike_fil, int_signal, spike_fil_butter
+    ## removed below because it is a large matrix for high samp_freq
+    # spike_fil_butter = filt_butter(spike_fil, samp_freq*1e-3, 
+    #                                butter_freq, axis=1)
+    return spike_fil, int_signal
 
 def bin_spikes(spike_mat, bin_width, dt):
     '''
@@ -236,9 +236,11 @@ def synchrony_stats(data, dt, maxlags=3000):
     sigma_mean = np.mean(sigma)
     chisq = sigma_pop / sigma_mean
     chi = np.sqrt(chisq)
-    #autocorr = acorr(data_pop - np.mean(data_pop), onesided=True, scale='coeff')
+    # autocorr = acorr(data_pop - np.mean(data_pop), onesided=True, 
+    #                  scale='coeff')
     mean_subtract = data_pop - np.mean(data_pop)
-    autocorr = scipy.signal.correlate(mean_subtract, mean_subtract, mode='valid')
+    autocorr = scipy.signal.correlate(mean_subtract, mean_subtract, 
+                                      mode='valid')
     return chi, autocorr
 
 def peak_freq_welch(data, dt):
@@ -385,7 +387,7 @@ def event_trig_avg(events, data, normalize=False, pts=10):
     data, ndarray, ndim=2
       Array to be averaged along dim 1 relative to the events.
     normalize, bool, optional
-      Whether to normalize to [-.5, .5]
+      Whether to normalize to phase on [-.5, .5]
     '''
     breakpts = np.array(
         np.hstack((0, (events[0:-1] + events[1:]) / 2., data.shape[1]-1)),
@@ -448,11 +450,12 @@ def order_param(eta_norm, eta_t_norm):
     
     Returns
     =======
-      z: array of complex valued order parameters
+      z: array of complex valued order parameters, np.nan if undefined
     '''
     num_neurons = eta_norm.shape[0]
     num_bins = eta_norm.shape[1]
     dtheta = np.min(np.diff(eta_t_norm))
+    # below will generate NaNs if the normalization is 0
     density_eta = eta_norm/np.tile(np.sum(eta_norm, axis=1),(num_bins,1)).T
     z = np.sum(density_eta*
                np.exp(1.0j*
@@ -494,11 +497,13 @@ def main(argv = None):
         spikes = data.nonzero()
     bins, spike_mat_bin = bin_spikes(spike_mat, bin_width, dt)
     ## Filter spike raster for integrated activity, filtered spike trains
-    # spike_fil, butter_int = spikes_filt(spike_mat, dt, f_sigma, butter_freq)
-    spike_fil_bin,butter_int_bin,spike_fil_butter = spikes_filt(spike_mat_bin, 
-                                                                dt*bin_width, 
-                                                                f_sigma, 
-                                                                butter_freq)
+    (spike_fil, butter_int, 
+     spike_fil_butter) = spikes_filt(spike_mat, dt, f_sigma, butter_freq)
+    #spike_fil_bin,butter_int_bin,spike_fil_butter = spikes_filt(spike_mat_bin, 
+    #                                                             dt*bin_width, 
+    #                                                             f_sigma, 
+    #                                                             butter_freq)
+    
     ## Peri-neuron time histogram
     psth_bin = np.sum(spike_mat_bin,axis=0)
     ## Synchrony measures from autocorrelation
@@ -528,7 +533,7 @@ def main(argv = None):
     eta[eta < 0] = 0
     eta_norm[eta_norm < 0] = 0
     ## Nonnegative matrix factorizations as expiratory measure (old)
-    # eta_nmf_err = nmf_error(eta)
+    # eta_nmf_err = nmf_error(eta) 
     # eta_norm_nmf_err = nmf_error(eta_norm)
     ## Order parameters
     ops = order_param(eta_norm, eta_t_norm)

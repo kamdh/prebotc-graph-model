@@ -199,6 +199,7 @@ def rhs(t, y,
     # evaluate time-varying input currents
     I_apsE_t = I_apsE(t)
     I_apsI_t = I_apsI(t)
+
     code = """
 int num_vertices = Nvertex_types[0];
 int num_edges = Nedge_list[0];
@@ -291,6 +292,7 @@ for (i=0; i<num_edges; i++) {
   dydt(j) = ((1 - y(j)) * msyninf - ksyn * y(j)) / tausyn;
 }
 """
+
     weave.inline(code, 
                  ['t', 'y', 'vertex_types', 'vertex_inh', 'edge_list', 
                   'in_degrees', 'in_edges', 'Cms', 'I_apsE_t', 'I_apsI_t', 
