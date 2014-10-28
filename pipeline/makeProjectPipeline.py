@@ -10,7 +10,7 @@ pIs = np.arange(0.0, 1.05, 0.05)
 gEs = np.arange(2.0, 6.0, 1.0)
 gIs = np.arange(2.0, 6.0, 1.0)
 reps = range(8)
-tf = 200000
+tf = 100000
 projName = "random_fine_g_sweep"
 ####
 
@@ -29,7 +29,7 @@ cmdFn2 = os.path.join(srcDir, 'pipeline', projName + "_post")
 cmdFn3 = os.path.join(srcDir, 'pipeline', projName + "_collect_control")
 graphOpts = "--deg"
 modelOpts = "-q --save_spikes"
-postOpts = "-f 60 --bin 40"
+postOpts = "-f 60 --bin 50"
 
 try:
     os.makedirs(graphDir)

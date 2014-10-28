@@ -43,7 +43,7 @@ def main(argv=None):
     args = parser.parse_args(argv[1:])
     n = args.n
     if args.deg:
-        p = 1.0 * args.p / (n-1) # compute p for kavg = args.p
+        p = 1.0 * args.p / (2*(n-1)) # compute p for kavg = args.p
     else:
         p = args.p
     pI = args.pI

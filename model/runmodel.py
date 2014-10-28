@@ -136,7 +136,6 @@ def main(argv=None):
     # r.set_integrator('vode',
     #                  rtol = rel_error,
     #                  atol = abs_error)
-    embed()
     if not quiet:
         print("Running integration loop....")
         t = time.time()

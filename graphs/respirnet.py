@@ -17,8 +17,8 @@ def assign_inh(pI):
     return inh
         
 def assign_gsyn(graph, e, gE, gI):
-    # assign excitatory or inhibitory synapses based on whether projecting neuron
-    # is inhibitory or excitatory
+    # assign excitatory or inhibitory synapses based on whether projecting 
+    # neuron is inhibitory or excitatory
     if nx.get_node_attributes(graph, 'inh')[ e[0] ] == 1:
         # inhibitory
         gsyn = gI
