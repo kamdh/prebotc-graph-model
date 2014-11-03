@@ -86,6 +86,7 @@ def parse_args(argv):
             args.cut, args.volt, args.peak_order, args.eta_norm_pts,
             args.op_abs_thresh)
 
+
 def chop_transient(data, transient, dt):
     '''
     Remove a transient from the data
@@ -95,6 +96,7 @@ def chop_transient(data, transient, dt):
         return data[:,firstIdx:]
     else:
         return data
+
 
 def find_spikes(data, threshold):
     '''
@@ -108,11 +110,13 @@ def find_spikes(data, threshold):
     spike_mat[new_indices]=1
     return new_indices, spike_mat
 
+
 def spikes_of_neuron(spikes, neuron):
     '''
     Return time indices of spiking of a given neuron
     '''
     return spikes[1][np.where(spikes[0] == neuron)]
+
 
 def spikes_filt(spike_mat, samp_dt, f_sigma, butter_freq):
     '''
@@ -135,20 +139,22 @@ def spikes_filt(spike_mat, samp_dt, f_sigma, butter_freq):
     def filt_window_gauss(samp_dt, std=20, width=None, normalize=1):
         if width is None:
             width=std*4+1
-            width /= (1000.0*samp_dt)
-            w=scipy.signal.gaussian(width, std)
-            if not normalize == 0:
-                w=normalize * w / sum(w)
-                return w
-                def filt_gauss(spike_mat, samp_dt, f_sigma=20):
-                    w=filt_window_gauss(samp_dt, std=f_sigma, normalize=1)
-                    spike_fil=scipy.signal.fftconvolve(spike_mat, w[ np.newaxis, : ], 
-                                                       mode='same')
-                    #spike_fil=scipy.signal.convolve(spike_mat, w[ np.newaxis, : ], 
+        width /= (1000.0*samp_dt)
+        w=scipy.signal.gaussian(width, std)
+        if not normalize == 0:
+            w=normalize * w / sum(w)
+        return w
+    
+    def filt_gauss(spike_mat, samp_dt, f_sigma=20):
+        w=filt_window_gauss(samp_dt, std=f_sigma, normalize=1)
+        spike_fil=scipy.signal.fftconvolve(spike_mat, w[ np.newaxis, : ], 
+                                           mode='same')
+        #spike_fil=scipy.signal.convolve(spike_mat, w[ np.newaxis, : ], 
                     #                                  mode='same')
-                    return spike_fil
-                    def filt_butter(data, samp_dt, butter_freq, axis=-1):
-                        '''
+        return spike_fil
+    
+    def filt_butter(data, samp_dt, butter_freq, axis=-1):
+        '''
         Filter data with a 2nd order butterworth filter.
         
         Parameters
@@ -180,15 +186,17 @@ def spikes_filt(spike_mat, samp_dt, f_sigma, butter_freq):
             data_butter=scipy.signal.filtfilt(b, a, data, axis=axis)
         else:
             raise Exception('filt_butter called with bad cutoff frequency')
-            data_butter /= samp_dt # normalize to rate
-            return data_butter
-            spike_fil=filt_gauss(spike_mat, samp_dt, f_sigma=f_sigma) 
-            int_signal=filt_butter(np.mean(spike_mat, axis=0), 
-                                   samp_dt, butter_freq)
-            ## removed below because it is a large matrix for high samp_dt
-            # spike_fil_butter=filt_butter(spike_fil, samp_dt,
-            #                                butter_freq, axis=1)
-            return spike_fil, int_signal
+        data_butter /= samp_dt # normalize to rate
+        return data_butter
+    
+    spike_fil=filt_gauss(spike_mat, samp_dt, f_sigma=f_sigma) 
+    int_signal=filt_butter(np.mean(spike_mat, axis=0), 
+                           samp_dt, butter_freq)
+    ## removed below because it is a large matrix for high samp_dt
+    # spike_fil_butter=filt_butter(spike_fil, samp_dt,
+    #                                butter_freq, axis=1)
+    return spike_fil, int_signal
+
 
 def bin_spikes(spike_mat, bin_width, dt):
     '''
@@ -216,7 +224,8 @@ def bin_spikes(spike_mat, bin_width, dt):
         bin_mask=np.where(which_bins == i)[0] # mask data in bin i, tuple
         bin_data=spike_mat[:,bin_mask]
         binned_spikes[:,i]=np.sum(bin_data, axis=1).flatten()
-        return bins, binned_spikes
+    return bins, binned_spikes
+
 
 def bin_subsamp(data, bins):
     '''
@@ -249,6 +258,7 @@ def bin_subsamp(data, bins):
     # #     binned_data[:,i]=np.mean(bin_data, axis=1).flatten()
     return binned_data
 
+
 def synchrony_stats(data, dt, maxlags=3000):
     '''
     Synchrony measures
@@ -275,6 +285,7 @@ def synchrony_stats(data, dt, maxlags=3000):
     autocorr=scipy.signal.correlate(mean_subtract, mean_subtract, 
                                     mode='valid')
     return chi, autocorr
+
 
 def peak_freq_welch(data, dt):
     '''
@@ -303,6 +314,7 @@ def peak_freq_welch(data, dt):
     peak_lag=1/peak_freq
     return peak_lag, peak_freq, freq, power
 
+
 def isi(raster):
     '''
     Finds the inter-event (spike)-interval of a raster (0-1) array,
@@ -320,6 +332,7 @@ def isi(raster):
     isi_vec=np.diff(whenSpiking)
     isi_vec=isi_vec[isi_vec != 1]
     return isi_vec
+
 
 def burst_lens(raster):
     '''
@@ -340,12 +353,14 @@ def burst_lens(raster):
     runs_zeros=np.nonzero(np.diff(w) == 1)[0] - np.nonzero(np.diff(w) == -1)[0]
     return runs_zeros
 
+
 def burst_starts(raster):
     '''
     Find the starting points of each burst, where raster entries jump
     from 0 to 1.
     '''
     return np.where(np.diff(raster) == 1)[0] + 1
+
 
 def burst_stats(data, cutoff, dt):
     '''
@@ -366,44 +381,43 @@ def burst_stats(data, cutoff, dt):
       muB: mean burst duration
       cvB: cv of burst durations
     '''
+
     if cutoff <= 0: #or cutoff > 1:
         raise Exception("cutoff out of range")
-        # mindata=np.min(data[10:-10])
-        # maxdata=np.max(data[10:-10])
-        # thresh=cutoff * (maxdata - mindata) + mindata
-        mean_data=np.mean(data[20:-20])
-        std_data=np.std(data[20:-20])
-        thresh=mean_data + std_data*cutoff
-        bursting=np.array(data > thresh, dtype=np.float)
-        duty_cycle=np.sum(bursting) / bursting.shape[0]
-        ibi_vec=isi(bursting) * dt
-        burst_start_locs=burst_starts(bursting)
-        burst_lengths=burst_lens(bursting)
-        burst_peak_locs=np.zeros(burst_start_locs.shape)
-        burst_peaks=np.zeros(burst_start_locs.shape)
-        bad_bursts=0
-        for i in range(len(burst_start_locs)):
-            # find peak of burst i
-            burst_index=burst_start_locs[i] + range(burst_lengths[i])
-            tmp=data[ burst_index ]
-            # peakInd=np.argmax(tmp)
-            peak_index=scipy.signal.argrelmax(tmp)[0]
-            if len(peak_index) > 1 or not peak_index:
-                ## more than one peak found or empty list
-                #print "more than one local max found in burst " + str(i)
-                bad_bursts += 1
-                peak_index=np.argmax(tmp)
-                # add 1 for Matlab 1-based indexing
-                burst_peak_locs[i]=burst_index[ np.int(peak_index) ] + 1
-                burst_peaks[i]=data[ burst_index[ np.int(peak_index) ] ]
-                ibi_mean=np.mean(ibi_vec)
-                ibi_cv=np.std(ibi_vec) / ibi_mean
-                burst_length_mean=np.mean(burst_lengths * dt)
-                burst_length_cv=np.std(burst_lengths * dt) / burst_length_mean
-                burst_start_locs += 1 # for Matlab
-                return (duty_cycle, ibi_mean, ibi_cv, burst_length_mean, burst_length_cv, 
-                        ibi_vec, burst_lengths, burst_start_locs, burst_peak_locs, 
-                        burst_peaks, bursting, bad_bursts)
+    mean_data=np.mean(data[20:-20])
+    std_data=np.std(data[20:-20])
+    thresh=mean_data + std_data*cutoff
+    bursting=np.array(data > thresh, dtype=np.float)
+    duty_cycle=np.sum(bursting) / bursting.shape[0]
+    ibi_vec=isi(bursting) * dt
+    burst_start_locs=burst_starts(bursting)
+    burst_lengths=burst_lens(bursting)
+    burst_peak_locs=np.zeros(burst_start_locs.shape)
+    burst_peaks=np.zeros(burst_start_locs.shape)
+    bad_bursts=0
+    for i in range(len(burst_start_locs)):
+        # find peak of burst i
+        burst_index=burst_start_locs[i] + range(burst_lengths[i])
+        tmp=data[ burst_index ]
+        # peakInd=np.argmax(tmp)
+        peak_index=scipy.signal.argrelmax(tmp)[0]
+        if len(peak_index) > 1 or not peak_index:
+            ## more than one peak found or empty list
+            #print "more than one local max found in burst " + str(i)
+            bad_bursts += 1
+            peak_index=np.argmax(tmp)
+        # add 1 for Matlab 1-based indexing
+        burst_peak_locs[i]=burst_index[ np.int(peak_index) ] + 1
+        burst_peaks[i]=data[ burst_index[ np.int(peak_index) ] ]
+    ibi_mean=np.mean(ibi_vec)
+    ibi_cv=np.std(ibi_vec) / ibi_mean
+    burst_length_mean=np.mean(burst_lengths * dt)
+    burst_length_cv=np.std(burst_lengths * dt) / burst_length_mean
+    burst_start_locs += 1 # for Matlab
+    return (duty_cycle, ibi_mean, ibi_cv, burst_length_mean, burst_length_cv, 
+            ibi_vec, burst_lengths, burst_start_locs, burst_peak_locs, 
+            burst_peaks, bursting, bad_bursts)
+
 
 def graph_attributes(graph_fn):
     '''
@@ -420,6 +434,7 @@ def graph_attributes(graph_fn):
         dtype=np.int)
     graph_adj=nx.adjacency_matrix(g, weight='gsyn')
     return vertex_types, vertex_inh, vertex_respir_area, graph_adj
+
 
 def event_trig_avg(events, data, normalize=False, pts=10):
     '''
@@ -446,33 +461,32 @@ def event_trig_avg(events, data, normalize=False, pts=10):
     else:
         max_interval=2*np.max(np.hstack((events-breakpts[0:-1],
                                          breakpts[1:]-events)))
-        midpt=int(np.floor(max_interval / 2))
-        numevents=events.shape[0]
-        eta=np.zeros((data.shape[0], max_interval))
-        for i in range(1,numevents-1): # don't use 1st and last due to boundary
-            timeidx=np.arange(int(breakpts[i]), int(breakpts[i+1]), dtype=np.int)
-            thisevent=events[i] 
-            center=int(np.where(timeidx==thisevent)[0].astype(int))
-            if normalize:
-                xs1=np.array(timeidx[:center] - timeidx[center], 
-                             dtype=np.float)
-                xs1 /= xs1[0]*(-2.0)
-                xs2=np.array(timeidx[center+1:] - timeidx[center], 
-                             dtype=np.float)
-                xs2 /= xs2[-1]*2.0
-                xs=np.hstack((xs1, xs2))
-                toadd=np.apply_along_axis(lambda x: 
-                                          scipy.interpolate.griddata(
-                                              xs, x, fullrange), 
-                                          1, data[:,timeidx])
-                eta += toadd
-            else:
-                lpad=midpt - center
-                rpad=max_interval - (len(timeidx)+lpad)
-                eta += np.pad(data[:, timeidx], ((0,0), (lpad,rpad)), 
-                              'constant', constant_values=(0,0))
-                eta /= float(numevents)
-                return eta
+    midpt=int(np.floor(max_interval / 2))
+    numevents=events.shape[0]
+    eta=np.zeros((data.shape[0], max_interval))
+    for i in range(1,numevents-1): # don't use 1st and last due to boundary
+        timeidx=np.arange(int(breakpts[i]), int(breakpts[i+1]), dtype=np.int)
+        thisevent=events[i] 
+        center=int(np.where(timeidx==thisevent)[0].astype(int))
+        if normalize:
+            xs1=np.array(timeidx[:center] - timeidx[center], dtype=np.float)
+            xs1 /= xs1[0]*(-2.0)
+            xs2=np.array(timeidx[center+1:] - timeidx[center], dtype=np.float)
+            xs2 /= xs2[-1]*2.0
+            xs=np.hstack((xs1, xs2))
+            toadd=np.apply_along_axis(lambda x: 
+                                      scipy.interpolate.griddata(
+                                          xs, x, fullrange), 
+                                      1, data[:,timeidx])
+            eta += toadd
+        else:
+            lpad=midpt - center
+            rpad=max_interval - (len(timeidx)+lpad)
+            eta += np.pad(data[:, timeidx], ((0,0), (lpad,rpad)), 
+                          'constant', constant_values=(0,0))
+    eta /= float(numevents)
+    return eta
+
 
 def nmf_error(eta):
     '''
@@ -484,6 +498,7 @@ def nmf_error(eta):
     nmf.fit(eta)
     reconstruction_err=nmf.reconstruction_err_
     return float(reconstruction_err)
+
 
 def order_param(eta_norm, eta_t_norm):
     '''
@@ -510,11 +525,13 @@ def order_param(eta_norm, eta_t_norm):
              axis=1)
     return z
 
+
 def predict_ops_olm(ops, predictors):
     import statsmodels.api as sm
     model=sm.OLS(ops, predictors)
     results=model.fit()
     return results
+
     
 def main(argv=None):
     '''
@@ -683,11 +700,9 @@ def main(argv=None):
                             'pop_burst_peak': pop_burst_peak,
                             'avg_firing_rate': avg_firing_rate
                         },
-                      oned_as='column'
-    )
+                     oned_as='column')
+    
 
 # run the main stuff
 if __name__ == '__main__':
     main()
-    
-
