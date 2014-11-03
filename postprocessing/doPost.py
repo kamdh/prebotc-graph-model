@@ -526,29 +526,37 @@ def main(argv=None):
         (simFn, outFn, trans, sec_flag, spike_thresh, f_sigma, butter_low, 
          butter_high, bin_width, cutoff, are_volts, 
          peak_order, eta_norm_pts, op_abs_thresh)=parse_args(argv)
-        butter_freq=np.array([butter_low, butter_high])
-        if sec_flag:
-            scalet=1e3
-        else:
-            scalet=1
-            ## Load simulation output
-            sim_output=scipy.io.loadmat(simFn)
-            ## Setup a few more variables, assumes no --save_full
-            if sim_output['saveStr'][0] == 'full':
-                raise Exception('output should not be from --save_full option')
-                graph_fn=str(sim_output['graphFn'][0])
-                dt=float(sim_output['dt']) * scalet
-                data=chop_transient(sim_output['Y'], trans, dt)
-                num_neurons=np.shape(data)[0]
-                ## Begin postprocessing
-                ## spike trains
-                if are_volts:
-                    spikes, spike_mat=find_spikes(data, spike_thresh)
-                else:
-                    spike_mat=data.todense()
-                    spikes=data.nonzero()
-                    bins, spike_mat_bin=bin_spikes(spike_mat, bin_width, dt)
 
+    butter_freq=np.array([butter_low, butter_high])
+
+    if sec_flag:
+        scalet=1e3
+    else:
+        scalet=1
+        
+    ## Load simulation output
+    sim_output=scipy.io.loadmat(simFn)
+
+    ## Setup a few more variables, assumes no --save_full
+    if sim_output['saveStr'][0] == 'full':
+        raise Exception('output should not be from --save_full option')
+
+    graph_fn=str(sim_output['graphFn'][0])
+    dt=float(sim_output['dt']) * scalet
+    data=chop_transient(sim_output['Y'], trans, dt)
+    num_neurons=np.shape(data)[0]
+    
+    ## Begin postprocessing
+    ## spike trains
+    if are_volts:
+        spikes, spike_mat=find_spikes(data, spike_thresh)
+    else:
+        spike_mat=data.todense()
+        spikes=data.nonzero()
+
+    ## Bin spikes
+    bins, spike_mat_bin=bin_spikes(spike_mat, bin_width, dt)
+    
     ## Filter spike raster for integrated activity, filtered spike trains
     spike_fil, butter_int=spikes_filt(spike_mat, dt/1000.0, 
                                       f_sigma, butter_freq)
@@ -566,14 +574,16 @@ def main(argv=None):
         chi, autocorr=synchrony_stats(data, dt)
     else:
         chi, autocorr=synchrony_stats(spike_fil_bin, dt*bin_width)
-        peak_lag, peak_freq, freq, power=peak_freq_welch(psth_bin, 
-                                                         dt*bin_width/1000.0)
+    
+    ## peak freqs
+    peak_lag, peak_freq, freq, power=peak_freq_welch(psth_bin, 
+                                                     dt*bin_width/1000.0)
 
     ## Old burst stats, remove??
     (duty_cycle, ibi_mean, ibi_cv, burst_length_mean, burst_length_cv, ibi_vec,
      burst_lengths, burst_start_locs, burst_peak_locs, burst_peaks, bursting, 
      bad_bursts)=burst_stats(butter_int_bin, cutoff, dt*bin_width)
-
+    
     ## New burst stats
     firing_rates=np.sum(spike_mat_bin,axis=1)/((bins[-1]-bins[0])/1000.0)
     avg_firing_rate=np.mean(firing_rates)
@@ -608,14 +618,13 @@ def main(argv=None):
     op_mask=op_abs > op_abs_thresh
     op_angle_mean=np.nanmean(op_angle[op_mask])
     op_angle_std=np.nanstd(op_angle[op_mask])
+
     inh_in_deg=np.sum(np.multiply(bin_adj,
                                   np.tile(vertex_inh*firing_rates,
-                                          (300,1)).T),
-                      0)
+                                          (300,1)).T), 0)
     exc_in_deg=np.sum(np.multiply(bin_adj,
                                   np.tile((1-vertex_inh)*firing_rates,
-                                          (300,1)).T),
-                      0)
+                                          (300,1)).T), 0)
     inh_in_deg=np.array(inh_in_deg).flatten()
     exc_in_deg=np.array(exc_in_deg).flatten()
     signed_deg=exc_in_deg - inh_in_deg
