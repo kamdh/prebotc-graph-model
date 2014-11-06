@@ -635,7 +635,6 @@ def main(argv=None):
     op_mask=op_abs > op_abs_thresh
     op_angle_mean=np.nanmean(op_angle[op_mask])
     op_angle_std=np.nanstd(op_angle[op_mask])
-
     inh_in_deg=np.sum(np.multiply(bin_adj,
                                   np.tile(vertex_inh*firing_rates,
                                           (300,1)).T), 0)
@@ -647,25 +646,26 @@ def main(argv=None):
     signed_deg=exc_in_deg - inh_in_deg
     op_mask2=np.bitwise_and(op_abs>op_abs_thresh, 
                             np.bitwise_or(op_angle<-0.25,op_angle>0.25))
-    fit_out=predict_ops_olm(op_angle[op_mask],
+    fit_out=predict_ops_olm(np.abs(op_angle[op_mask]),
                             np.column_stack((vertex_types[op_mask],
-                                             signed_deg[op_mask])))
-    X=np.column_stack((inh_in_deg[op_mask], exc_in_deg[op_mask],
-                       vertex_types[op_mask]))
-    y=np.array(op_mask2[op_mask], dtype=int)
-    trainset=range(len(X)/2)
-    validset=range(trainset[-1]+1,len(X))
-    from sklearn.qda import QDA
-    clf=QDA()
-    clf.fit(X[trainset,:],y[trainset])
+                                             inh_in_deg[op_mask],
+                                             exc_in_deg[op_mask])))
+    # X=np.column_stack((inh_in_deg[op_mask], exc_in_deg[op_mask],
+    #                    vertex_types[op_mask]))
+    # y=np.array(op_mask2[op_mask], dtype=int)
+    # trainset=range(len(X)/2)
+    # validset=range(trainset[-1]+1,len(X))
+    # from sklearn.qda import QDA
+    # clf=QDA()
+    # clf.fit(X[trainset,:],y[trainset])
     embed()
 
     ## Save output
     scipy.io.savemat(outFn,
                      mdict={'bins': bins,
                             'spike_mat_bin': spike_mat_bin,
-                            'spike_fil': spike_fil,
-                            'butter_int': butter_int,
+                            # 'spike_fil': spike_fil,
+                            # 'butter_int': butter_int,
                             'spike_fil_bin': spike_fil_bin,
                             'butter_int_bin': butter_int_bin,
                             'psth_bin': psth_bin,
