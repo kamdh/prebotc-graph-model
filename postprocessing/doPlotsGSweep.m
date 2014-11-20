@@ -8,8 +8,8 @@ set(0,'DefaultAxesFontSize', 18)
 set(0,'DefaultAxesFontName','Helvetica')
 set(0,'DefaultAxesLineWidth',1);
 
-dopartics = 1;
-docombined = 0;
+dopartics = 0;
+docombined = 1;
 partics = {'er_n300_k1.0_deg_pI0.00_rep1',...
            'er_n300_k1.0_deg_pI0.10_rep1',...
            'er_n300_k1.0_deg_pI0.20_rep1',...
@@ -65,16 +65,16 @@ if docombined
             plt = [plotDir, '/', pltGStr, '_chi.eps']
             print('-deps', plt)
 
-            figure
-            myPcolor(X,Y, dutyCycle(:,:,gEidx, gIidx))
-            titlestr = sprintf('duty cycle\ngE = %1.1f, gI = %1.1f', gE,gI);
-            title(titlestr, 'fontsize', 32)
-            xlabel('\langle k \rangle', 'fontsize', 24)
-            ylabel('p_I','fontsize', 24)
-            colorbar
-            colormap('gray')
-            plt = [plotDir, '/', pltGStr, '_duty_cycle.eps']
-            print('-deps', plt)
+            % figure
+            % myPcolor(X,Y, dutyCycle(:,:,gEidx, gIidx))
+            % titlestr = sprintf('duty cycle\ngE = %1.1f, gI = %1.1f', gE,gI);
+            % title(titlestr, 'fontsize', 32)
+            % xlabel('\langle k \rangle', 'fontsize', 24)
+            % ylabel('p_I','fontsize', 24)
+            % colorbar
+            % colormap('gray')
+            % plt = [plotDir, '/', pltGStr, '_duty_cycle.eps']
+            % print('-deps', plt)
 
             figure
             myPcolor(X,Y, fMax(:,:,gEidx, gIidx))
@@ -101,55 +101,55 @@ if docombined
             plt = [plotDir, '/', pltGStr, '_lag.eps']
             print('-deps', plt)
 
-            figure
-            myPcolor(X,Y, muB(:,:,gEidx, gIidx) / 1000)
-            titlestr=sprintf(['mean burst duration (s)\ngE = %1.1f, ' ...
-                              'gI = %1.1f'], ...
-                             gE,gI);
-            title(titlestr, 'fontsize', 32)
-            title('mean burst duration (s)','fontsize', 32)
-            xlabel('\langle k \rangle','fontsize', 24)
-            ylabel('p_I','fontsize', 24)
-            colorbar
-            colormap('gray')
-            plt = [plotDir, '/', pltGStr, '_mean_burst.eps']
-            print('-deps', plt)
+            % figure
+            % myPcolor(X,Y, muB(:,:,gEidx, gIidx) / 1000)
+            % titlestr=sprintf(['mean burst duration (s)\ngE = %1.1f, ' ...
+            %                   'gI = %1.1f'], ...
+            %                  gE,gI);
+            % title(titlestr, 'fontsize', 32)
+            % title('mean burst duration (s)','fontsize', 32)
+            % xlabel('\langle k \rangle','fontsize', 24)
+            % ylabel('p_I','fontsize', 24)
+            % colorbar
+            % colormap('gray')
+            % plt = [plotDir, '/', pltGStr, '_mean_burst.eps']
+            % print('-deps', plt)
 
-            figure
-            myPcolor(X,Y, muIBI(:,:,gEidx, gIidx) / 1000)
-            titlestr=sprintf('mean IBI (s)\ngE = %1.1f, gI = %1.1f',...
-                             gE,gI);
-            title(titlestr, 'fontsize', 32)
-            xlabel('\langle k \rangle','fontsize', 24)
-            ylabel('p_I','fontsize', 24)
-            colorbar
-            colormap('gray')
-            plt = [plotDir, '/', pltGStr, '_mean_IBI.eps']
-            print('-deps', plt)
+            % figure
+            % myPcolor(X,Y, muIBI(:,:,gEidx, gIidx) / 1000)
+            % titlestr=sprintf('mean IBI (s)\ngE = %1.1f, gI = %1.1f',...
+            %                  gE,gI);
+            % title(titlestr, 'fontsize', 32)
+            % xlabel('\langle k \rangle','fontsize', 24)
+            % ylabel('p_I','fontsize', 24)
+            % colorbar
+            % colormap('gray')
+            % plt = [plotDir, '/', pltGStr, '_mean_IBI.eps']
+            % print('-deps', plt)
 
-            figure
-            myPcolor(X,Y, cvIBI(:,:,gEidx, gIidx))
-            titlestr=sprintf('CV of IBIs\ngE = %1.1f, gI = %1.1f',...
-                             gE,gI);
-            title(titlestr, 'fontsize', 32)
-            xlabel('\langle k \rangle','fontsize', 24)
-            ylabel('p_I','fontsize', 24)
-            colorbar
-            colormap('gray')
-            plt = [plotDir, '/', pltGStr, '_cv_IBIs.eps']
-            print('-deps', plt)
+            % figure
+            % myPcolor(X,Y, cvIBI(:,:,gEidx, gIidx))
+            % titlestr=sprintf('CV of IBIs\ngE = %1.1f, gI = %1.1f',...
+            %                  gE,gI);
+            % title(titlestr, 'fontsize', 32)
+            % xlabel('\langle k \rangle','fontsize', 24)
+            % ylabel('p_I','fontsize', 24)
+            % colorbar
+            % colormap('gray')
+            % plt = [plotDir, '/', pltGStr, '_cv_IBIs.eps']
+            % print('-deps', plt)
 
-            figure
-            myPcolor(X,Y, cvB(:,:,gEidx, gIidx))
-            titlestr=sprintf('CV burst lengths\ngE = %1.1f, gI = %1.1f',...
-                             gE,gI);
-            title(titlestr, 'fontsize', 32)
-            xlabel('\langle k \rangle','fontsize', 24)
-            ylabel('p_I','fontsize', 24)
-            colorbar
-            colormap('gray')
-            plt = [plotDir, '/', pltGStr, '_cv_bursts.eps']
-            print('-deps', plt)
+            % figure
+            % myPcolor(X,Y, cvB(:,:,gEidx, gIidx))
+            % titlestr=sprintf('CV burst lengths\ngE = %1.1f, gI = %1.1f',...
+            %                  gE,gI);
+            % title(titlestr, 'fontsize', 32)
+            % xlabel('\langle k \rangle','fontsize', 24)
+            % ylabel('p_I','fontsize', 24)
+            % colorbar
+            % colormap('gray')
+            % plt = [plotDir, '/', pltGStr, '_cv_bursts.eps']
+            % print('-deps', plt)
 
             figure
             myPcolor(X,Y, op_angle_mean(:,:,gEidx, gIidx))

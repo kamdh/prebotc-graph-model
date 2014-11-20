@@ -52,15 +52,15 @@ if docombined
     plt = [plotDir, '/chi.eps']
     print('-deps', plt)
 
-    figure
-    myPcolor(X,Y, dutyCycle)
-    title('duty cycle', 'fontsize', 32)
-    xlabel('\langle k \rangle', 'fontsize', 24)
-    ylabel('p_I','fontsize', 24)
-    colorbar
-    colormap('gray')
-    plt = [plotDir, '/duty_cycle.eps']
-    print('-deps', plt)
+    % figure
+    % myPcolor(X,Y, dutyCycle)
+    % title('duty cycle', 'fontsize', 32)
+    % xlabel('\langle k \rangle', 'fontsize', 24)
+    % ylabel('p_I','fontsize', 24)
+    % colorbar
+    % colormap('gray')
+    % plt = [plotDir, '/duty_cycle.eps']
+    % print('-deps', plt)
 
     figure
     myPcolor(X,Y, fMax)
@@ -82,45 +82,45 @@ if docombined
     plt = [plotDir, '/lag.eps']
     print('-deps', plt)
 
-    figure
-    myPcolor(X,Y, muB / 1000)
-    title('mean burst duration (s)','fontsize', 32)
-    xlabel('\langle k \rangle','fontsize', 24)
-    ylabel('p_I','fontsize', 24)
-    colorbar
-    colormap('gray')
-    plt = [plotDir, '/mean_burst.eps']
-    print('-deps', plt)
+    % figure
+    % myPcolor(X,Y, muB / 1000)
+    % title('mean burst duration (s)','fontsize', 32)
+    % xlabel('\langle k \rangle','fontsize', 24)
+    % ylabel('p_I','fontsize', 24)
+    % colorbar
+    % colormap('gray')
+    % plt = [plotDir, '/mean_burst.eps']
+    % print('-deps', plt)
 
-    figure
-    myPcolor(X,Y, muIBI / 1000)
-    title('mean IBI (s)','fontsize', 32)
-    xlabel('\langle k \rangle','fontsize', 24)
-    ylabel('p_I','fontsize', 24)
-    colorbar
-    colormap('gray')
-    plt = [plotDir, '/mean_IBI.eps']
-    print('-deps', plt)
+    % figure
+    % myPcolor(X,Y, muIBI / 1000)
+    % title('mean IBI (s)','fontsize', 32)
+    % xlabel('\langle k \rangle','fontsize', 24)
+    % ylabel('p_I','fontsize', 24)
+    % colorbar
+    % colormap('gray')
+    % plt = [plotDir, '/mean_IBI.eps']
+    % print('-deps', plt)
 
-    figure
-    myPcolor(X,Y, cvIBI)
-    title('c.v. of IBIs','fontsize', 32)
-    xlabel('\langle k \rangle','fontsize', 24)
-    ylabel('p_I','fontsize', 24)
-    colorbar
-    colormap('gray')
-    plt = [plotDir, '/cv_IBIs.eps']
-    print('-deps', plt)
+    % figure
+    % myPcolor(X,Y, cvIBI)
+    % title('c.v. of IBIs','fontsize', 32)
+    % xlabel('\langle k \rangle','fontsize', 24)
+    % ylabel('p_I','fontsize', 24)
+    % colorbar
+    % colormap('gray')
+    % plt = [plotDir, '/cv_IBIs.eps']
+    % print('-deps', plt)
 
-    figure
-    myPcolor(X,Y, cvB)
-    title('c.v. of burst durations','fontsize', 32)
-    xlabel('\langle k \rangle','fontsize', 24)
-    ylabel('p_I','fontsize', 24)
-    colorbar
-    colormap('gray')
-    plt = [plotDir, '/cv_bursts.eps']
-    print('-deps', plt)
+    % figure
+    % myPcolor(X,Y, cvB)
+    % title('c.v. of burst durations','fontsize', 32)
+    % xlabel('\langle k \rangle','fontsize', 24)
+    % ylabel('p_I','fontsize', 24)
+    % colorbar
+    % colormap('gray')
+    % plt = [plotDir, '/cv_bursts.eps']
+    % print('-deps', plt)
 
 
     figure

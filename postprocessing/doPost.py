@@ -500,7 +500,7 @@ def nmf_error(eta):
     return float(reconstruction_err)
 
 
-def order_param(eta_norm, eta_t_norm):
+def order_param(eta_norm, eta_t_norm, op_abs_thresh):
     '''
     Compute the order parameter for the normalized (phase) ETAs.
 
@@ -508,22 +508,35 @@ def order_param(eta_norm, eta_t_norm):
     ==========
       eta_norm: normalized ETA array
       eta_t_norm: [-.5, .5] phases corresponding to second axis of array
+      op_abs_thresh: float
     
     Returns
     =======
-      z: array of complex valued order parameters, np.nan if undefined
+      ops: array of complex valued order parameters, np.nan if undefined
+      op_abs: magnitudes
+      op_angle: angles
+      op_mask: mask of ops with magnitude above threshold
+      op_angle_mean: mean angle of significant ops
+      op_angle_std: standard deviation of significant ops
     '''
+    assert op_abs_thresh < 0.5 and op_abs_thresh >= 0.0,\
+        'op_abs_thresh out of range'
     num_neurons=eta_norm.shape[0]
     num_bins=eta_norm.shape[1]
     dtheta=np.min(np.diff(eta_t_norm))
     # below will generate NaNs if the normalization is 0
     density_eta=eta_norm/np.tile(np.sum(eta_norm, axis=1),(num_bins,1)).T
-    z=np.sum(density_eta*
+    ops=np.sum(density_eta*
              np.exp(1.0j*
                     np.tile(eta_t_norm,(num_neurons,1))*
                     (2*np.pi)), 
              axis=1)
-    return z
+    op_angle=np.angle(ops)/(2*np.pi)
+    op_abs=np.abs(ops)
+    op_mask=op_abs > op_abs_thresh
+    op_angle_mean=np.nanmean(op_angle[op_mask])
+    op_angle_std=np.nanstd(op_angle[op_mask])
+    return (ops,op_abs,op_angle,op_mask,op_angle_mean,op_angle_std)
 
 
 def predict_ops_olm(ops, predictors):
@@ -532,6 +545,11 @@ def predict_ops_olm(ops, predictors):
     results=model.fit()
     return results
 
+def predict_ops_logit(op_class, predictors):
+    import statsmodels.api as sm
+    model=sm.Logit(op_class, predictors)
+    results=model.fit(method='bfgs',maxiter=120)
+    return results
     
 def main(argv=None):
     '''
@@ -597,9 +615,9 @@ def main(argv=None):
                                                      dt*bin_width/1000.0)
 
     ## Old burst stats, remove??
-    (duty_cycle, ibi_mean, ibi_cv, burst_length_mean, burst_length_cv, ibi_vec,
-     burst_lengths, burst_start_locs, burst_peak_locs, burst_peaks, bursting, 
-     bad_bursts)=burst_stats(butter_int_bin, cutoff, dt*bin_width)
+    # (duty_cycle, ibi_mean, ibi_cv, burst_length_mean, burst_length_cv, ibi_vec,
+    #  burst_lengths, burst_start_locs, burst_peak_locs, burst_peaks, bursting, 
+    #  bad_bursts)=burst_stats(butter_int_bin, cutoff, dt*bin_width)
     
     ## New burst stats
     firing_rates=np.sum(spike_mat_bin,axis=1)/((bins[-1]-bins[0])/1000.0)
@@ -629,27 +647,42 @@ def main(argv=None):
     bin_adj=np.matrix(graph_adj > 0, dtype=np.float)
 
     ## Order parameters   
-    ops=order_param(eta_norm, eta_t_norm)
-    op_angle=np.angle(ops)/(2*np.pi)
-    op_abs=np.abs(ops)
-    op_mask=op_abs > op_abs_thresh
-    op_angle_mean=np.nanmean(op_angle[op_mask])
-    op_angle_std=np.nanstd(op_angle[op_mask])
+    (ops,op_abs,op_angle,op_mask,
+     op_angle_mean,op_angle_std)=order_param(eta_norm,eta_t_norm,op_abs_thresh)
+
+    ## Predict OP's
     inh_in_deg=np.sum(np.multiply(bin_adj,
                                   np.tile(vertex_inh*firing_rates,
-                                          (300,1)).T), 0)
+                                          (300,1)).T), 0).flatten
     exc_in_deg=np.sum(np.multiply(bin_adj,
                                   np.tile((1-vertex_inh)*firing_rates,
                                           (300,1)).T), 0)
     inh_in_deg=np.array(inh_in_deg).flatten()
     exc_in_deg=np.array(exc_in_deg).flatten()
-    signed_deg=exc_in_deg - inh_in_deg
-    op_mask2=np.bitwise_and(op_abs>op_abs_thresh, 
-                            np.bitwise_or(op_angle<-0.25,op_angle>0.25))
-    fit_out=predict_ops_olm(np.abs(op_angle[op_mask]),
+    exp_mask=np.bitwise_and(op_mask,
+                                 np.bitwise_or(op_angle<-0.25,op_angle>0.25))
+    insp_mask=np.bitwise_and(op_mask,op_angle<0.25,op_angle>-0.25)
+    inh_insp_in_deg=np.array(np.sum(np.multiply(bin_adj,
+        np.tile((vertex_inh & insp_mask)*firing_rates,(300,1)).T), 0)).flatten()
+    inh_exp_in_deg=np.array(np.sum(np.multiply(bin_adj,
+        np.tile((vertex_inh & exp_mask)*firing_rates,(300,1)).T), 0)).flatten()
+    exc_insp_in_deg=np.array(np.sum(np.multiply(bin_adj,
+        np.tile(((1-vertex_inh)&insp_mask)*firing_rates,(300,1)).T), 0)).flatten()
+    exc_exp_in_deg=np.array(np.sum(np.multiply(bin_adj,
+        np.tile(((1-vertex_inh)&exp_mask)*firing_rates,(300,1)).T), 0)).flatten()
+    fit_ols=predict_ops_olm(np.abs(op_angle[op_mask]),
                             np.column_stack((vertex_types[op_mask],
-                                             inh_in_deg[op_mask],
-                                             exc_in_deg[op_mask])))
+                                             inh_insp_in_deg[op_mask],
+                                             inh_exp_in_deg[op_mask],
+                                             exc_insp_in_deg[op_mask],
+                                             exc_exp_in_deg[op_mask])))
+    fit_log=predict_ops_logit(np.array(exp_mask[op_mask],dtype='float'),
+                              np.column_stack((vertex_types[op_mask],
+                                             inh_insp_in_deg[op_mask],
+                                             inh_exp_in_deg[op_mask],
+                                             exc_insp_in_deg[op_mask],
+                                             exc_exp_in_deg[op_mask])))
+
     # X=np.column_stack((inh_in_deg[op_mask], exc_in_deg[op_mask],
     #                    vertex_types[op_mask]))
     # y=np.array(op_mask2[op_mask], dtype=int)
@@ -673,18 +706,18 @@ def main(argv=None):
                             'autocorr': autocorr,
                             'peak_lag': peak_lag,
                             'peak_freq': peak_freq,
-                            'duty_cycle': duty_cycle,
-                            'ibi_mean': ibi_mean,
-                            'ibi_cv': ibi_cv,
-                            'burst_length_mean': burst_length_mean,
-                            'burst_length_cv': burst_length_cv,
-                            'ibi_vec': ibi_vec,
-                            'burst_lengths': burst_lengths,
-                            'burst_start_locs': burst_start_locs,
-                            'burst_peak_locs': burst_peak_locs,
-                            'burst_peaks': burst_peaks,
-                            'bursting': bursting,
-                            'bad_bursts': bad_bursts,
+                            # 'duty_cycle': duty_cycle,
+                            # 'ibi_mean': ibi_mean,
+                            # 'ibi_cv': ibi_cv,
+                            # 'burst_length_mean': burst_length_mean,
+                            # 'burst_length_cv': burst_length_cv,
+                            # 'ibi_vec': ibi_vec,
+                            # 'burst_lengths': burst_lengths,
+                            # 'burst_start_locs': burst_start_locs,
+                            # 'burst_peak_locs': burst_peak_locs,
+                            # 'burst_peaks': burst_peaks,
+                            # 'bursting': bursting,
+                            # 'bad_bursts': bad_bursts,
                             'eta': eta,
                             'eta_t': eta_t,
                             'eta_norm': eta_norm,

@@ -57,11 +57,11 @@ print "num rep: " + str(numRep)
 
 ## setup the collected arrays
 chiArray = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
-dutyCycle = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
-muIBI = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
-cvIBI = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
-muB = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
-cvB = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
+# dutyCycle = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
+# muIBI = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
+# cvIBI = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
+# muB = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
+# cvB = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
 fMax = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
 lag = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
 op_angle_mean = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
@@ -78,11 +78,11 @@ for i in range(len(splitLines)):
     try:
         M = scipy.io.loadmat(postFile)
         chiArray[idx] += float(M['chi'])
-        dutyCycle[idx] += float(M['duty_cycle'])
-        muIBI[idx] += float(M['ibi_mean'])
-        cvIBI[idx] += float(M['ibi_cv'])
-        muB[idx] += float(M['burst_length_mean'])
-        cvB[idx] += float(M['burst_length_cv'])
+        # dutyCycle[idx] += float(M['duty_cycle'])
+        # muIBI[idx] += float(M['ibi_mean'])
+        # cvIBI[idx] += float(M['ibi_cv'])
+        # muB[idx] += float(M['burst_length_mean'])
+        # cvB[idx] += float(M['burst_length_cv'])
         fMax[idx] += float(M['peak_freq'])
         lag[idx] += float(M['peak_lag'])
         op_angle_mean[idx] += float(M['op_angle_mean'])
@@ -96,11 +96,11 @@ for i in range(len(splitLines)):
         fErr.write(cmd)
 
 chiArray = np.divide(chiArray, numRep)
-dutyCycle = np.divide(dutyCycle, numRep)
-muIBI = np.divide(muIBI, numRep)
-cvIBI = np.divide(cvIBI, numRep)
-muB = np.divide(muB, numRep)
-cvB = np.divide(cvB, numRep)
+# dutyCycle = np.divide(dutyCycle, numRep)
+# muIBI = np.divide(muIBI, numRep)
+# cvIBI = np.divide(cvIBI, numRep)
+# muB = np.divide(muB, numRep)
+# cvB = np.divide(cvB, numRep)
 fMax = np.divide(fMax, numRep)
 lag = np.divide(lag, numRep)
 op_angle_mean = np.divide(op_angle_mean, numRep)
@@ -114,11 +114,11 @@ scipy.io.savemat(outFn,
                  mdict={'X':X,
                         'Y':Y,
                         'chiArray':chiArray,
-                        'dutyCycle':dutyCycle,
-                        'muIBI': muIBI,
-                        'cvIBI': cvIBI,
-                        'muB': muB,
-                        'cvB': cvB,
+                        # 'dutyCycle':dutyCycle,
+                        # 'muIBI': muIBI,
+                        # 'cvIBI': cvIBI,
+                        # 'muB': muB,
+                        # 'cvB': cvB,
                         'fMax': fMax,
                         'lag': lag,
                         'op_angle_mean': op_angle_mean,
