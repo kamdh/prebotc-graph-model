@@ -32,6 +32,7 @@ def parse_args(argv):
     peak_order=20
     eta_norm_pts=8
     op_abs_thresh=0.2
+    silent_firing_rate=0.1 # Hz
     # parsing
     parser=argparse.ArgumentParser(prog="doPost",
                                    description=('Postprocessing of' 
@@ -69,7 +70,7 @@ def parse_args(argv):
                         type=float, default=cutoff)
     parser.add_argument('--peak_order', 
                         help='maximum order for defining peak number of bins'+\
-                        ' (default: %(default)s)',
+                        ', bin count (default: %(default)s)',
                         type=int, default=peak_order)
     parser.add_argument('--eta_norm_pts',
                         help='half the number of points in [-.5, .5] onto '+\
@@ -80,11 +81,15 @@ def parse_args(argv):
                         'which to calculate statistics ' +\
                         '(default: %(default)s)',
                         type=float, default=op_abs_thresh)
+    parser.add_argument('--silent_firing_rate',
+                        help='threshold firing rate below which to classify '+\
+                        'neuron as silent, Hz (default: %(default)s)',
+                        type=float, default=silent_firing_rate)
     args=parser.parse_args(argv[1:])
     return (args.sim, args.output, args.transient, args.sec, args.thresh,
             args.fsig, args.butter_low, args.butter_high, args.bin_width,
             args.cut, args.volt, args.peak_order, args.eta_norm_pts,
-            args.op_abs_thresh)
+            args.op_abs_thresh, args.silent_firing_rate)
 
 
 def chop_transient(data, transient, dt):
@@ -118,7 +123,7 @@ def spikes_of_neuron(spikes, neuron):
     return spikes[1][np.where(spikes[0] == neuron)]
 
 
-def spikes_filt(spike_mat, samp_dt, f_sigma, butter_freq):
+def filter_spikes(spike_mat, samp_dt, f_sigma, butter_freq):
     '''
     Filter the spike timeseries. Returns both neuron-by-neuron timeseries
     filtered with a gaussian kernel and the population data filtered
@@ -133,8 +138,8 @@ def spikes_filt(spike_mat, samp_dt, f_sigma, butter_freq):
 
     Returns
     =======
-    spike_fil: gaussian filtered matrix, same shape as spike_mat
-    int_signal: butterworth filtered population timeseries
+    spike_fil: gaussian filtered matrix, same shape as spike_mat (spikes/s)
+    int_signal: butterworth filtered population timeseries (spikes/neuron/s)
     '''
     def filt_window_gauss(samp_dt, std=20, width=None, normalize=1):
         if width is None:
@@ -151,6 +156,8 @@ def spikes_filt(spike_mat, samp_dt, f_sigma, butter_freq):
                                            mode='same')
         #spike_fil=scipy.signal.convolve(spike_mat, w[ np.newaxis, : ], 
                     #                                  mode='same')
+        spike_fil/=samp_dt
+        spike_fil[np.abs(spike_fil) < 1e-10]=0.0
         return spike_fil
     
     def filt_butter(data, samp_dt, butter_freq, axis=-1):
@@ -447,7 +454,7 @@ def event_trig_avg(events, data, normalize=False, pts=10):
     data, ndarray, ndim=2
       Array to be averaged along dim 1 relative to the events.
     normalize, bool, optional
-      Whether to normalize to phase on [-.5, .5]
+      Whether to normalize to phase variable
     '''
     breakpts=np.array(
         np.hstack((0, (events[0:-1] + events[1:]) / 2., data.shape[1]-1)),
@@ -462,9 +469,10 @@ def event_trig_avg(events, data, normalize=False, pts=10):
         max_interval=2*np.max(np.hstack((events-breakpts[0:-1],
                                          breakpts[1:]-events)))
     midpt=int(np.floor(max_interval / 2))
-    numevents=events.shape[0]
+    numevents=events.shape[0]-2 # don't use 1st and last due to boundary
     eta=np.zeros((data.shape[0], max_interval))
-    for i in range(1,numevents-1): # don't use 1st and last due to boundary
+    for j in range(numevents):
+        i=j+1
         timeidx=np.arange(int(breakpts[i]), int(breakpts[i+1]), dtype=np.int)
         thisevent=events[i] 
         center=int(np.where(timeidx==thisevent)[0].astype(int))
@@ -485,8 +493,38 @@ def event_trig_avg(events, data, normalize=False, pts=10):
             eta += np.pad(data[:, timeidx], ((0,0), (lpad,rpad)), 
                           'constant', constant_values=(0,0))
     eta /= float(numevents)
+    eta[eta < 0] = 0
     return eta
 
+def eta_vertex_inputs(eta,bin_adj,vertex_inh):
+    '''
+    Compute the event triggered average summed over the neighbors
+    of each cell. This characterizes their input.
+
+    Parameters
+    ==========
+    eta, event triggered average
+    bin_adj, adjacency matrix
+    vertex_inh, logical array indicating inhibitory type
+
+    Returns
+    =======
+    exc_input, excitatory input to each cell
+    inh_input, inhibitory input to each cell    
+    '''
+    m=eta.shape[0]
+    n=eta.shape[1]
+    inh_input=np.zeros((m,n))
+    exc_input=np.zeros((m,n))
+    for v in range(m):
+        neighbors=np.array(np.where(bin_adj[:,v])[0]).flatten()
+        for u in neighbors:
+            if vertex_inh[u]:
+                inh_input[v,:]+=eta[u,:]
+            else:
+                exc_input[v,:]+=eta[u,:]
+    return exc_input, inh_input
+            
 
 def nmf_error(eta):
     '''
@@ -558,9 +596,11 @@ def main(argv=None):
     ## Setup parameters for postprocessing
     if argv is None:
         argv=sys.argv
-        (simFn, outFn, trans, sec_flag, spike_thresh, f_sigma, butter_low, 
+        (simFn, outFn, trans, sec_flag,
+         spike_thresh, f_sigma, butter_low,
          butter_high, bin_width, cutoff, are_volts, 
-         peak_order, eta_norm_pts, op_abs_thresh)=parse_args(argv)
+         peak_order, eta_norm_pts, op_abs_thresh,
+         silent_firing_rate)=parse_args(argv)
 
     butter_freq=np.array([butter_low, butter_high])
 
@@ -584,7 +624,7 @@ def main(argv=None):
     ## Begin postprocessing
     ## spike trains
     if are_volts:
-        spikes, spike_mat=find_spikes(data, spike_thresh)
+        spikes, spike_mat=find_spikes(data,spike_thresh)
     else:
         spike_mat=data.todense()
         spikes=data.nonzero()
@@ -593,11 +633,11 @@ def main(argv=None):
     bins, spike_mat_bin=bin_spikes(spike_mat, bin_width, dt)
     
     ## Filter spike raster for integrated activity, filtered spike trains
-    spike_fil, butter_int=spikes_filt(spike_mat, dt/1000.0, 
+    spike_fil, butter_int=filter_spikes(spike_mat, dt/1000.0, 
                                       f_sigma, butter_freq)
     spike_fil_bin=bin_subsamp(spike_fil, bins)
     butter_int_bin=bin_subsamp(butter_int, bins).flatten()
-    # spike_fil_bin,butter_int_bin=spikes_filt(spike_mat_bin, 
+    # spike_fil_bin,butter_int_bin=filter_spikes(spike_mat_bin, 
     #                                            dt*bin_width/1000.0, 
     #                                            f_sigma, 
     #                                            butter_freq)
@@ -625,6 +665,11 @@ def main(argv=None):
 
     ## Compute the population burst peaks
     pop_burst_peak=scipy.signal.argrelmax(butter_int_bin, order=peak_order)[0]
+    pop_burst_peak=pop_burst_peak[
+        butter_int_bin[pop_burst_peak] > np.mean(butter_int_bin)]
+    ibi_vec=np.diff(pop_burst_peak)*bin_width*dt/1000.0
+    ibi_mean=np.mean(ibi_vec)
+    ibi_cv=np.std(ibi_vec)/ibi_mean
 
     ## Compute event triggered averages
     ## First, using absolute time
@@ -634,9 +679,7 @@ def main(argv=None):
     eta_norm=event_trig_avg(pop_burst_peak, spike_fil_bin, normalize=True,
                             pts=eta_norm_pts)
     eta_t_norm=np.linspace(-0.5, 0.5, 2*eta_norm_pts)
-    ## Remove negative values, numerical
-    eta[eta < 0]=0
-    eta_norm[eta_norm < 0]=0
+
     ## Nonnegative matrix factorizations as expiratory measure (old)
     # eta_nmf_err=nmf_error(eta) 
     # eta_norm_nmf_err=nmf_error(eta_norm)
@@ -650,7 +693,7 @@ def main(argv=None):
     (ops,op_abs,op_angle,op_mask,
      op_angle_mean,op_angle_std)=order_param(eta_norm,eta_t_norm,op_abs_thresh)
 
-    ## Predict OP's
+    ## Classify cells as inspiratory/expiratory/tonic/silent
     inh_in_deg=np.sum(np.multiply(bin_adj,
                                   np.tile(vertex_inh*firing_rates,
                                           (300,1)).T), 0).flatten
@@ -659,30 +702,60 @@ def main(argv=None):
                                           (300,1)).T), 0)
     inh_in_deg=np.array(inh_in_deg).flatten()
     exc_in_deg=np.array(exc_in_deg).flatten()
-    exp_mask=np.bitwise_and(op_mask,
-                                 np.bitwise_or(op_angle<-0.25,op_angle>0.25))
-    insp_mask=np.bitwise_and(op_mask,op_angle<0.25,op_angle>-0.25)
-    inh_insp_in_deg=np.array(np.sum(np.multiply(bin_adj,
-        np.tile((vertex_inh & insp_mask)*firing_rates,(300,1)).T), 0)).flatten()
-    inh_exp_in_deg=np.array(np.sum(np.multiply(bin_adj,
-        np.tile((vertex_inh & exp_mask)*firing_rates,(300,1)).T), 0)).flatten()
-    exc_insp_in_deg=np.array(np.sum(np.multiply(bin_adj,
-        np.tile(((1-vertex_inh)&insp_mask)*firing_rates,(300,1)).T), 0)).flatten()
-    exc_exp_in_deg=np.array(np.sum(np.multiply(bin_adj,
-        np.tile(((1-vertex_inh)&exp_mask)*firing_rates,(300,1)).T), 0)).flatten()
-    fit_ols=predict_ops_olm(np.abs(op_angle[op_mask]),
-                            np.column_stack((vertex_types[op_mask],
-                                             inh_insp_in_deg[op_mask],
-                                             inh_exp_in_deg[op_mask],
-                                             exc_insp_in_deg[op_mask],
-                                             exc_exp_in_deg[op_mask])))
-    fit_log=predict_ops_logit(np.array(exp_mask[op_mask],dtype='float'),
-                              np.column_stack((vertex_types[op_mask],
-                                             inh_insp_in_deg[op_mask],
-                                             inh_exp_in_deg[op_mask],
-                                             exc_insp_in_deg[op_mask],
-                                             exc_exp_in_deg[op_mask])))
+    expir_mask=np.bitwise_and(op_mask,
+        np.bitwise_or(op_angle<-0.25,op_angle>0.25))
+    inspir_mask=np.bitwise_and(op_mask,
+        np.bitwise_and(op_angle<=0.25,op_angle>=-0.25))
+    silent_mask=firing_rates<silent_firing_rate
+    tonic_mask=np.bitwise_not(expir_mask | inspir_mask | silent_mask)
+    num_silent=np.sum(silent_mask)
+    num_expir=np.sum(expir_mask)
+    num_inspir=np.sum(inspir_mask)
+    num_tonic=np.sum(tonic_mask)
+    (exc_input,inh_input)=eta_vertex_inputs(eta_norm,bin_adj,vertex_inh)
 
+    ## Average input those cells receive
+    avg_inspir=np.mean(np.hstack((inh_input[inspir_mask,:],
+                                  exc_input[inspir_mask,:])),axis=0)
+    avg_expir=np.mean(np.hstack((inh_input[expir_mask,:],
+                                 exc_input[expir_mask,:])),axis=0)
+    avg_tonic=np.mean(np.hstack((inh_input[tonic_mask,:],
+                                 exc_input[tonic_mask,:])),axis=0)
+    avg_silent=np.mean(np.hstack((inh_input[silent_mask,:],
+                                  exc_input[silent_mask,:])),axis=0)
+    # inh_inspir_in_deg=np.array(np.sum(np.multiply(bin_adj,
+    #     np.tile((vertex_inh & inspir_mask)*firing_rates,(300,1)).T),
+    #     0)).flatten()
+    # inh_expir_in_deg=np.array(np.sum(np.multiply(bin_adj,
+    #     np.tile((vertex_inh & expir_mask)*firing_rates,(300,1)).T),
+    #     0)).flatten()
+    # exc_inspir_in_deg=np.array(np.sum(np.multiply(bin_adj,
+    #     np.tile(((1-vertex_inh)&inspir_mask)*firing_rates,(300,1)).T),
+    #     0)).flatten()
+    # exc_expir_in_deg=np.array(np.sum(np.multiply(bin_adj,
+    #     np.tile(((1-vertex_inh)&expir_mask)*firing_rates,(300,1)).T),
+    #     0)).flatten()
+    # fit_ols=predict_ops_olm(np.abs(op_angle[op_mask]),
+    #                         np.column_stack((vertex_types[op_mask],
+    #                                          inh_inspir_in_deg[op_mask],
+    #                                          inh_expir_in_deg[op_mask],
+    #                                          exc_inspir_in_deg[op_mask],
+    #                                          exc_expir_in_deg[op_mask])))
+    # fit_log=predict_ops_logit(np.array(expir_mask[op_mask],dtype='float'),
+    #                           np.column_stack((#vertex_types[op_mask],
+    #                                          np.ones((op_mask.sum(),)),
+    #                                          inh_inspir_in_deg[op_mask],
+    #                                          #inh_expir_in_deg[op_mask],
+    #                                          #exc_inspir_in_deg[op_mask],
+    #                                          exc_expir_in_deg[op_mask])))
+    # #print fit_log.summary()
+    # print 'params'
+    # print fit_log.params
+    # print 'odds ratios'
+    # print np.exp(fit_log.params)
+
+    
+    
     # X=np.column_stack((inh_in_deg[op_mask], exc_in_deg[op_mask],
     #                    vertex_types[op_mask]))
     # y=np.array(op_mask2[op_mask], dtype=int)
@@ -691,7 +764,26 @@ def main(argv=None):
     # from sklearn.qda import QDA
     # clf=QDA()
     # clf.fit(X[trainset,:],y[trainset])
+
+    ## some plotting
+    import matplotlib.pyplot as plt
+    plt.ion()
+    plt.plot(butter_int_bin)
+    plt.hold(True)
+    plt.plot(pop_burst_peak, butter_int_bin[pop_burst_peak],'ko')
+
+    plt.figure()
+    plt.hold(True)
+    plt.plot(avg_inspir)
+    plt.plot(avg_expir)
+    plt.plot(avg_tonic)
+    plt.legend(('inspir','expir','tonic'),'upper right')
+
+    plt.figure()
+    plt.imshow(spike_mat_bin,cmap='gray')
+    
     embed()
+    
 
     ## Save output
     scipy.io.savemat(outFn,
@@ -731,8 +823,13 @@ def main(argv=None):
                             'op_angle_mean': op_angle_mean,
                             'op_angle_std': op_angle_std,
                             'pop_burst_peak': pop_burst_peak,
-                            'avg_firing_rate': avg_firing_rate
+                            'avg_firing_rate': avg_firing_rate,
+                            'num_silent': num_silent,
+                            'num_expir': num_expir,
+                            'num_inspir': num_inspir,
+                            'num_tonic': num_tonic
                         },
+
                      oned_as='column')
     
 
