@@ -203,146 +203,32 @@ def main(argv=None):
                                           (300,1)).T), 0)
     inh_in_deg=np.array(inh_in_deg).flatten()
     exc_in_deg=np.array(exc_in_deg).flatten()
-    expir_mask=np.bitwise_and(op_mask,
+    mask_expir=np.bitwise_and(op_mask,
         np.bitwise_or(op_angle<-0.25,op_angle>0.25))
-    inspir_mask=np.bitwise_and(op_mask,
+    mask_inspir=np.bitwise_and(op_mask,
         np.bitwise_and(op_angle<=0.25,op_angle>=-0.25))
-    silent_mask=firing_rates<silent_firing_rate
-    tonic_mask=np.bitwise_not(expir_mask | inspir_mask | silent_mask)
-    num_silent=np.sum(silent_mask)
-    num_expir=np.sum(expir_mask)
-    num_inspir=np.sum(inspir_mask)
-    num_tonic=np.sum(tonic_mask)
+    mask_silent=firing_rates<silent_firing_rate
+    mask_tonic=np.bitwise_not(mask_expir | mask_inspir | mask_silent)
+    num_silent=np.sum(mask_silent)
+    num_expir=np.sum(mask_expir)
+    num_inspir=np.sum(mask_inspir)
+    num_tonic=np.sum(mask_tonic)
     (exc_input,inh_input)=eta_vertex_inputs(eta_norm,bin_adj,vertex_inh)
 
     ## Average input those cells receive
-    avg_inspir=np.mean(np.hstack((inh_input[inspir_mask,:],
-                                  exc_input[inspir_mask,:])),axis=0)
-    avg_expir=np.mean(np.hstack((inh_input[expir_mask,:],
-                                 exc_input[expir_mask,:])),axis=0)
-    avg_tonic=np.mean(np.hstack((inh_input[tonic_mask,:],
-                                 exc_input[tonic_mask,:])),axis=0)
-    avg_silent=np.mean(np.hstack((inh_input[silent_mask,:],
-                                  exc_input[silent_mask,:])),axis=0)
-    inh_inspir_in_deg=np.array(np.sum(np.multiply(bin_adj,
-        np.tile((vertex_inh & inspir_mask), #*firing_rates,
-                (300,1)).T),
-        0)).flatten()
-    inh_expir_in_deg=np.array(np.sum(np.multiply(bin_adj,
-        np.tile((vertex_inh & expir_mask), #*firing_rates,
-                (300,1)).T),
-        0)).flatten()
-    exc_inspir_in_deg=np.array(np.sum(np.multiply(bin_adj,
-        np.tile(((1-vertex_inh)&inspir_mask), #*firing_rates,
-                (300,1)).T),
-        0)).flatten()
-    exc_expir_in_deg=np.array(np.sum(np.multiply(bin_adj,
-        np.tile(((1-vertex_inh)&expir_mask), #*firing_rates,
-                (300,1)).T),
-        0)).flatten()
-    # fit_ols=predict_ops_olm(np.abs(op_angle[op_mask]),
-    #                         np.column_stack((vertex_types[op_mask],
-    #                                          inh_inspir_in_deg[op_mask],
-    #                                          inh_expir_in_deg[op_mask],
-    #                                          exc_inspir_in_deg[op_mask],
-    #                                          exc_expir_in_deg[op_mask])))
-    Ys=np.array(expir_mask[op_mask],dtype='float')
-    Xs=np.column_stack((#vertex_types[op_mask],
-                       # np.ones((op_mask.sum(),)), # only for statsmodels
-                        inh_inspir_in_deg[op_mask],
-                        inh_expir_in_deg[op_mask],
-                        exc_inspir_in_deg[op_mask],
-                        exc_expir_in_deg[op_mask]))
-    from sklearn.linear_model import LogisticRegression
-    from sklearn import cross_validation
-    logmodel=LogisticRegression(penalty='l1')
-    scores=cross_validation.cross_val_score(logmodel,Xs,Ys,
-                                            cv=10,scoring='f1')
-    # print 'F1 scores for logit'
-    # print scores
-    print("F1 score summary: %0.2f (+/- %0.2f)" % \
-          (scores.mean(), scores.std() * 2))
-    logmodel.fit(Xs,Ys)
-    print("Coefficients for full fit: %s") % str(logmodel.raw_coef_)
-    print("Sign of coefficients: %s") % str(np.sign(logmodel.coef_))
-    #fit_log=predict_ops_logit(Ys,Xs)
-    # print fit_log.summary()
-    # print 'params'
-    # print fit_log.params
-    # print 'odds ratios'
-    # print np.exp(fit_log.params)    
-
-
-    # ## some plotting
-    # import matplotlib.pyplot as plt
-    # plt.ion()
-    # plt.plot(bins*dt/1000.0,butter_int_bin)
-    # plt.hold(True)
-    # plt.plot(bins[pop_burst_peak]*dt/1000.0,
-    #          butter_int_bin[pop_burst_peak],'ko')
-    
-    # plt.figure()
-    # plt.hold(True)
-    # plt.plot(avg_inspir)
-    # plt.plot(avg_expir)
-    # plt.plot(avg_tonic)
-    # plt.legend(('inspir','expir','tonic'),'upper right')
-
-    # plt.figure()
-    # plt.imshow(spike_mat_bin,cmap='gray')
-
-
-    # plt.figure()
-    # xs=np.linspace(butter_int_bin.min(), butter_int_bin.max(),500)
-    # import scipy.stats as ss
-    # fit_a,fit_loc,fit_b=ss.gamma.fit(butter_int_bin)
-    # plt.hist(butter_int_bin, normed=True,bins=100)
-    # plt.ion()
-    # plt.plot(xs, ss.gamma.pdf(xs,fit_a,fit_loc,fit_b))
-
+    avg_inspir=np.mean(np.hstack((inh_input[mask_inspir,:],
+                                  exc_input[mask_inspir,:])),axis=0)
+    avg_expir=np.mean(np.hstack((inh_input[mask_expir,:],
+                                 exc_input[mask_expir,:])),axis=0)
+    avg_tonic=np.mean(np.hstack((inh_input[mask_tonic,:],
+                                 exc_input[mask_tonic,:])),axis=0)
+    avg_silent=np.mean(np.hstack((inh_input[mask_silent,:],
+                                  exc_input[mask_silent,:])),axis=0)
     mrf_coeff=fit_MRF_pseudolikelihood(adj_exc[op_mask][:,op_mask],
                                        adj_inh[op_mask][:,op_mask],
-                                       Ys)
-    
+                                       np.array(mask_expir[op_mask],
+                                                dtype='float'))
     embed()
-
-    # import pymc
-    
-    # def pymc_simple(data):
-    #     '''
-    #     Single gamma model
-    #     '''
-    #     alpha=pymc.Gamma("alpha",alpha=1,beta=1)
-    #     beta=pymc.Gamma("beta",alpha=1,beta=1)
-    #     y=pymc.Gamma("y",alpha=alpha, beta=beta, value=data, observed=True)
-    #     return locals()
-    
-    # def pymc_model(data):
-    #     '''
-    #     Mixed Gamma model
-    #     '''
-    #     p=pymc.Uniform("p",0,1)
-    #     ber=pymc.Bernoulli("ber",p=p,size=len(data))
-    #     alpha1=pymc.Gamma("alpha1",alpha=1,beta=1)
-    #     alpha2=pymc.Gamma("alpha2",alpha=1,beta=1)
-    #     beta1=pymc.Gamma("beta1",alpha=1,beta=1)
-    #     beta2=pymc.Gamma("beta2",alpha=1,beta=1)
-    #     @pymc.deterministic
-    #     def par_alpha(ber=ber,alpha1=alpha1,alpha2=alpha2):
-    #         return ber*alpha1 + (1-ber)*alpha2
-
-    #     @pymc.deterministic
-    #     def par_beta(ber=ber,beta1=beta1,beta2=beta2):
-    #         return ber*beta1 + (1-ber)*beta2
-
-    #     y=pymc.Gamma("y",alpha=par_alpha, beta=par_beta,
-    #                  value=data, observed=True)
-    #     return locals()
-
-    # simple_fit=pymc.MCMC(pymc_simple(butter_int_bin))
-    # sipmle_fit.
-    # alpha_simp=simple_fit.stats()['alpha']['mean']
-    # model_fit=pymc.MCMC(pymc_model(butter_int_bin))
 
     ## Save output
     scipy.io.savemat(outFn,
@@ -391,10 +277,10 @@ def main(argv=None):
                             'eta_avg_expir': avg_expir,
                             'eta_avg_tonic': avg_tonic,
                             'eta_avg_silent': avg_silent,
-                            'mask_inspir': inspir_mask,
-                            'mask_expir': expir_mask,
-                            'mask_silent': silent_mask,
-                            'mask_tonic': tonic_mask
+                            'mask_inspir': mask_inspir,
+                            'mask_expir': mask_expir,
+                            'mask_silent': mask_silent,
+                            'mask_tonic': mask_tonic
                         },
 
                      oned_as='column')

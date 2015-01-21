@@ -1,3 +1,9 @@
+'''
+postprocessing.py
+
+A library of functions used for postprocessing the preBotC model output.
+'''
+
 import numpy as np
 import scipy.signal
 from IPython import embed
