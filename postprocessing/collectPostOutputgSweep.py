@@ -66,6 +66,7 @@ fMax = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
 lag = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
 op_angle_mean = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
 op_angle_std = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
+num_expir = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
 for i in range(len(splitLines)):
     run = splitLines[i,:]
     postFile = run[2]
@@ -87,6 +88,7 @@ for i in range(len(splitLines)):
         lag[idx] += float(M['peak_lag'])
         op_angle_mean[idx] += float(M['op_angle_mean'])
         op_angle_std[idx] += float(M['op_angle_std'])
+        num_expir[idx]+= float(M['num_expir'])
     except IOError, KeyError:
         # simOutFn = run[1]
         # cmd = "./doPost.py " + simOutFn + " " + postFile + "\n"
@@ -105,6 +107,7 @@ fMax = np.divide(fMax, numRep)
 lag = np.divide(lag, numRep)
 op_angle_mean = np.divide(op_angle_mean, numRep)
 op_angle_std = np.divide(op_angle_std, numRep)
+num_expir =np.divid(num_expir,numRep)
 X = np.transpose(np.tile(ks, (numpI, 1)))
 Y = np.tile(pIs, (numk, 1))
 
@@ -123,6 +126,7 @@ scipy.io.savemat(outFn,
                         'lag': lag,
                         'op_angle_mean': op_angle_mean,
                         'op_angle_std': op_angle_std,
+                        'num_expir': num_expir,
                         'ks': ks,
                         'pIs': pIs,
                         'gEs': gEs,

@@ -19,12 +19,12 @@ def parse_args(argv):
     # defaults
     transient=20000 # ms
     spike_thresh=-20.0 # mV
-    f_sigma=20.0 # ms
+    f_sigma=60.0 # ms
     butter_high=4.0 # Hz
     butter_low=-np.inf # Hz
-    bin_width=20 # ms
+    bin_width=50 # ms
     cutoff=0.5
-    peak_order=20
+    peak_order=12
     eta_norm_pts=8
     op_abs_thresh=0.2
     silent_firing_rate=0.1 # Hz
@@ -161,7 +161,6 @@ def main(argv=None):
     # (duty_cycle, ibi_mean, ibi_cv, burst_length_mean, burst_length_cv, ibi_vec,
     #  burst_lengths, burst_start_locs, burst_peak_locs, burst_peaks, bursting, 
     #  bad_bursts)=burst_stats(butter_int_bin, cutoff, dt*bin_width)
-    
     ## New burst stats
     firing_rates=np.sum(spike_mat_bin,axis=1)/((bins[-1]-bins[0])/1000.0)
     avg_firing_rate=np.mean(firing_rates)
@@ -183,26 +182,15 @@ def main(argv=None):
                             pts=eta_norm_pts)
     eta_t_norm=np.linspace(-0.5, 0.5, 2*eta_norm_pts)
 
-    ## Nonnegative matrix factorizations as expiratory measure (old)
-    # eta_nmf_err=nmf_error(eta) 
-    # eta_norm_nmf_err=nmf_error(eta_norm)
-
-    ## Load in graph data for matlab to use later, so far unused
+    ## Load in graph data
     (vertex_types, vertex_inh, vertex_respir_area, graph_adj, bin_adj,
      adj_exc, adj_inh)=graph_attributes(graph_fn)
+
     ## Order parameters   
     (ops,op_abs,op_angle,op_mask,
      op_angle_mean,op_angle_std)=order_param(eta_norm,eta_t_norm,op_abs_thresh)
 
     ## Classify cells as inspiratory/expiratory/tonic/silent
-    inh_in_deg=np.sum(np.multiply(bin_adj,
-                                  np.tile(vertex_inh,#*firing_rates,
-                                          (300,1)).T), 0)
-    exc_in_deg=np.sum(np.multiply(bin_adj,
-                                  np.tile((1-vertex_inh),#*firing_rates,
-                                          (300,1)).T), 0)
-    inh_in_deg=np.array(inh_in_deg).flatten()
-    exc_in_deg=np.array(exc_in_deg).flatten()
     mask_expir=np.bitwise_and(op_mask,
         np.bitwise_or(op_angle<-0.25,op_angle>0.25))
     mask_inspir=np.bitwise_and(op_mask,
@@ -228,8 +216,7 @@ def main(argv=None):
                                        adj_inh[op_mask][:,op_mask],
                                        np.array(mask_expir[op_mask],
                                                 dtype='float'))
-    embed()
-
+    
     ## Save output
     scipy.io.savemat(outFn,
                      mdict={'bins': bins,
@@ -280,11 +267,17 @@ def main(argv=None):
                             'mask_inspir': mask_inspir,
                             'mask_expir': mask_expir,
                             'mask_silent': mask_silent,
-                            'mask_tonic': mask_tonic
+                            'mask_tonic': mask_tonic,
+                            'num_silent': num_silent,
+                            'num_expir': num_expir,
+                            'num_inspir': num_inspir,
+                            'num_tonic': num_tonic,
+                            'adj_exc': adj_exc,
+                            'adj_inh': adj_inh,
+                            'bin_adj': bin_adj,
+                            'mrf_coeff': mrf_coeff
                         },
-
                      oned_as='column')
-    
 
 # run the main stuff
 if __name__ == '__main__':

@@ -40,6 +40,8 @@ fn = [dataDir, '/post/collected.mat'];
 plotDir = [getenv('HOME') '/work/prebotc/data/', projName, ...
            '/plots'];
 
+x_axis_label='k_{avg}';
+y_axis_label='p_I';
 
 load(fn)
 numgE = length(gEs);
@@ -57,8 +59,8 @@ if docombined
             titlestr=sprintf('synchrony \\chi\ngE = %1.1f, gI = %1.1f', ...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
-            xlabel('\langle k \rangle', 'fontsize', 24)
-            ylabel('p_I','fontsize', 24)
+            xlabel(x_axis_label, 'fontsize', 24)
+            ylabel(y_axis_label,'fontsize', 24)
             caxis([0,1])
             colorbar
             colormap('gray')
@@ -69,8 +71,8 @@ if docombined
             % myPcolor(X,Y, dutyCycle(:,:,gEidx, gIidx))
             % titlestr = sprintf('duty cycle\ngE = %1.1f, gI = %1.1f', gE,gI);
             % title(titlestr, 'fontsize', 32)
-            % xlabel('\langle k \rangle', 'fontsize', 24)
-            % ylabel('p_I','fontsize', 24)
+            % xlabel(x_axis_label, 'fontsize', 24)
+            % ylabel(y_axis_label,'fontsize', 24)
             % colorbar
             % colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_duty_cycle.eps']
@@ -82,8 +84,8 @@ if docombined
                              gE,gI);
             title(titlestr, 'fontsize', 32)
             title('peak frequency (1/s)','fontsize', 32)
-            xlabel('\langle k \rangle', 'fontsize', 24)
-            ylabel('p_I','fontsize', 24)
+            xlabel(x_axis_label, 'fontsize', 24)
+            ylabel(y_axis_label,'fontsize', 24)
             colorbar
             colormap('gray')
             plt = [plotDir, '/', pltGStr, '_peak_freq.eps']
@@ -94,8 +96,8 @@ if docombined
             titlestr=sprintf('dominant period (s)\ngE = %1.1f, gI = %1.1f',...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
-            xlabel('\langle k \rangle', 'fontsize', 24)
-            ylabel('p_I','fontsize', 24)
+            xlabel(x_axis_label, 'fontsize', 24)
+            ylabel(y_axis_label,'fontsize', 24)
             colorbar
             colormap('gray')
             plt = [plotDir, '/', pltGStr, '_lag.eps']
@@ -108,8 +110,8 @@ if docombined
             %                  gE,gI);
             % title(titlestr, 'fontsize', 32)
             % title('mean burst duration (s)','fontsize', 32)
-            % xlabel('\langle k \rangle','fontsize', 24)
-            % ylabel('p_I','fontsize', 24)
+            % xlabel(x_axis_label,'fontsize', 24)
+            % ylabel(y_axis_label,'fontsize', 24)
             % colorbar
             % colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_mean_burst.eps']
@@ -120,8 +122,8 @@ if docombined
             % titlestr=sprintf('mean IBI (s)\ngE = %1.1f, gI = %1.1f',...
             %                  gE,gI);
             % title(titlestr, 'fontsize', 32)
-            % xlabel('\langle k \rangle','fontsize', 24)
-            % ylabel('p_I','fontsize', 24)
+            % xlabel(x_axis_label,'fontsize', 24)
+            % ylabel(y_axis_label,'fontsize', 24)
             % colorbar
             % colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_mean_IBI.eps']
@@ -132,8 +134,8 @@ if docombined
             % titlestr=sprintf('CV of IBIs\ngE = %1.1f, gI = %1.1f',...
             %                  gE,gI);
             % title(titlestr, 'fontsize', 32)
-            % xlabel('\langle k \rangle','fontsize', 24)
-            % ylabel('p_I','fontsize', 24)
+            % xlabel(x_axis_label,'fontsize', 24)
+            % ylabel(y_axis_label,'fontsize', 24)
             % colorbar
             % colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_cv_IBIs.eps']
@@ -144,8 +146,8 @@ if docombined
             % titlestr=sprintf('CV burst lengths\ngE = %1.1f, gI = %1.1f',...
             %                  gE,gI);
             % title(titlestr, 'fontsize', 32)
-            % xlabel('\langle k \rangle','fontsize', 24)
-            % ylabel('p_I','fontsize', 24)
+            % xlabel(x_axis_label,'fontsize', 24)
+            % ylabel(y_axis_label,'fontsize', 24)
             % colorbar
             % colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_cv_bursts.eps']
@@ -156,8 +158,8 @@ if docombined
             titlestr=sprintf('mean OP phase\ngE = %1.1f, gI = %1.1f',...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
-            xlabel('\langle k \rangle','fontsize', 24)
-            ylabel('p_I','fontsize', 24)
+            xlabel(x_axis_label,'fontsize', 24)
+            ylabel(y_axis_label,'fontsize', 24)
             colorbar
             colormap('gray')
             plt = [plotDir, '/', pltGStr, '_op_angle_mean.eps']
@@ -169,13 +171,27 @@ if docombined
                               '%1.1f, gI = %1.1f'],...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
-            xlabel('\langle k \rangle','fontsize', 24)
-            ylabel('p_I','fontsize', 24)
+            xlabel(x_axis_label,'fontsize', 24)
+            ylabel(y_axis_label,'fontsize', 24)
             colorbar
             colormap('gray')
             plt = [plotDir, '/', pltGStr, '_op_angle_std.eps']
             print('-deps', plt)
 
+            figure
+            myPcolor(X,Y, num_expir(:,:,gEidx, gIidx))
+            titlestr=sprintf(['# expiratory\ngE = ' ...
+                              '%1.1f, gI = %1.1f'],...
+                             gE,gI);
+            title(titlestr, 'fontsize', 32)
+            xlabel(x_axis_label,'fontsize', 24)
+            ylabel(y_axis_label,'fontsize', 24)
+            colorbar
+            colormap('gray')
+            plt = [plotDir, '/', pltGStr, '_num_expir.eps']
+            print('-deps', plt)
+            
+            
             close all
         end % gI
     end % gE
