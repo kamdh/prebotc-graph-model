@@ -12,8 +12,9 @@ import numpy as np
 import scipy.signal
 import scipy.io
 import argparse
-from IPython import embed
+#from IPython import embed
 from postprocessing import *
+from classify_phase import fit_MRF_pseudolikelihood
 
 def parse_args(argv):
     # defaults

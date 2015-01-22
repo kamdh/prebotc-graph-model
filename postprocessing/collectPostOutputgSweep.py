@@ -67,6 +67,8 @@ lag = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
 op_angle_mean = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
 op_angle_std = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
 num_expir = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
+avg_firing_rate = np.zeros((numk, numpI, numgE, numgI), dtype=np.float)
+
 for i in range(len(splitLines)):
     run = splitLines[i,:]
     postFile = run[2]
@@ -89,6 +91,7 @@ for i in range(len(splitLines)):
         op_angle_mean[idx] += float(M['op_angle_mean'])
         op_angle_std[idx] += float(M['op_angle_std'])
         num_expir[idx]+= float(M['num_expir'])
+        avg_firing_rate[idx]+= float(M['avg_firing_rate'])
     except IOError, KeyError:
         # simOutFn = run[1]
         # cmd = "./doPost.py " + simOutFn + " " + postFile + "\n"
@@ -107,7 +110,9 @@ fMax = np.divide(fMax, numRep)
 lag = np.divide(lag, numRep)
 op_angle_mean = np.divide(op_angle_mean, numRep)
 op_angle_std = np.divide(op_angle_std, numRep)
-num_expir =np.divid(num_expir,numRep)
+num_expir =np.divide(num_expir,numRep)
+avg_firing_rate =np.divide(avg_firing_rate,numRep)
+
 X = np.transpose(np.tile(ks, (numpI, 1)))
 Y = np.tile(pIs, (numk, 1))
 
@@ -127,6 +132,7 @@ scipy.io.savemat(outFn,
                         'op_angle_mean': op_angle_mean,
                         'op_angle_std': op_angle_std,
                         'num_expir': num_expir,
+                        'avg_firing_rate': avg_firing_rate,
                         'ks': ks,
                         'pIs': pIs,
                         'gEs': gEs,
