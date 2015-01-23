@@ -24,16 +24,19 @@ def fit_MRF_pseudolikelihood(adj_exc,adj_inh,y):
     '''
     from sklearn.linear_model import LogisticRegression
     from sklearn import cross_validation
-    N=y.shape[0]
-    ytile=np.tile(y,(N,1)).T
-    X1=np.array(np.sum(np.multiply(adj_exc,ytile),0)).flatten()
-    X2=np.array(np.sum(np.multiply(adj_exc,1-ytile),0)).flatten()
-    X3=np.array(np.sum(np.multiply(adj_inh,ytile),0)).flatten()
-    X4=np.array(np.sum(np.multiply(adj_inh,1-ytile),0)).flatten()
-    model=LogisticRegression(penalty='l2')
-    X=np.column_stack((X1,X2,X3,X4))
-    model.fit(X,y)
-    B=model.raw_coef_.flatten()
+    if len(np.unique(y)) < 2:
+        B=np.array([np.nan,np.nan,np.nan,np.nan,np.nan])
+    else:
+        N=y.shape[0]
+        ytile=np.tile(y,(N,1)).T
+        X1=np.array(np.sum(np.multiply(adj_exc,ytile),0)).flatten()
+        X2=np.array(np.sum(np.multiply(adj_exc,1-ytile),0)).flatten()
+        X3=np.array(np.sum(np.multiply(adj_inh,ytile),0)).flatten()
+        X4=np.array(np.sum(np.multiply(adj_inh,1-ytile),0)).flatten()
+        model=LogisticRegression(penalty='l2')
+        X=np.column_stack((X1,X2,X3,X4))
+        model.fit(X,y)
+        B=model.raw_coef_.flatten()
     return B
     
 def predict_MRF(B, adj_exc, adj_inh, burn_in=4e3, steps=1e4,
