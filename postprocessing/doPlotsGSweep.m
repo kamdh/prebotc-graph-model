@@ -8,6 +8,10 @@ set(0,'DefaultAxesFontSize', 18)
 set(0,'DefaultAxesFontName','Helvetica')
 set(0,'DefaultAxesLineWidth',1);
 
+chi_threshold=0.25;
+num_neurons=300;
+expir_threshold=15;
+
 dopartics = 0;
 docombined = 1;
 partics = {'er_n300_k1.0_deg_pI0.00_rep1',...
@@ -40,8 +44,8 @@ fn = [dataDir, '/post/collected.mat'];
 plotDir = [getenv('HOME') '/work/prebotc/data/', projName, ...
            '/plots'];
 
-x_axis_label='k_{avg}';
-y_axis_label='p_I';
+x_axis_label='connectivity k_{avg}';
+y_axis_label='inhibitory fraction p_I';
 
 load(fn)
 numgE = length(gEs);
@@ -56,142 +60,161 @@ if docombined
 
             figure
             myPcolor(X,Y, chiArray(:,:,gEidx, gIidx));
-            titlestr=sprintf('synchrony \\chi\ngE = %1.1f, gI = %1.1f', ...
+            titlestr=sprintf('synchrony \\chi\ng_E = %1.1f, g_I = %1.1f', ...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
             xlabel(x_axis_label, 'fontsize', 24)
             ylabel(y_axis_label,'fontsize', 24)
-            caxis([0,1])
-            colorbar
-            colormap('gray')
+            %axis([0,1])
+            % colorbar
+            %colormap('gray')
             plt = [plotDir, '/', pltGStr, '_chi.eps']
-            print('-deps', plt)
+            print('-depsc', plt)
 
+            chi_mask=chiArray(:,:,gEidx,gIidx) > chi_threshold;
+            
             % figure
             % myPcolor(X,Y, dutyCycle(:,:,gEidx, gIidx))
-            % titlestr = sprintf('duty cycle\ngE = %1.1f, gI = %1.1f', gE,gI);
+            % titlestr = sprintf('duty cycle\ng_E = %1.1f, g_I = %1.1f', gE,gI);
             % title(titlestr, 'fontsize', 32)
             % xlabel(x_axis_label, 'fontsize', 24)
             % ylabel(y_axis_label,'fontsize', 24)
-            % colorbar
-            % colormap('gray')
+            % % colorbar
+            % %colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_duty_cycle.eps']
-            % print('-deps', plt)
+            % print('-depsc', plt)
 
             figure
             myPcolor(X,Y, fMax(:,:,gEidx, gIidx))
-            titlestr=sprintf('peak frequency (Hz)\ngE = %1.1f, gI = %1.1f',...
+            titlestr=sprintf('peak frequency (Hz)\ng_E = %1.1f, g_I = %1.1f',...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
             title('peak frequency (1/s)','fontsize', 32)
             xlabel(x_axis_label, 'fontsize', 24)
             ylabel(y_axis_label,'fontsize', 24)
-            colorbar
-            colormap('gray')
+            % colorbar
+            %colormap('gray')
             plt = [plotDir, '/', pltGStr, '_peak_freq.eps']
-            print('-deps', plt)
+            print('-depsc', plt)
 
             figure
             myPcolor(X,Y, lag(:,:,gEidx, gIidx))
-            titlestr=sprintf('dominant period (s)\ngE = %1.1f, gI = %1.1f',...
+            titlestr=sprintf('dominant period (s)\ng_E = %1.1f, g_I = %1.1f',...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
             xlabel(x_axis_label, 'fontsize', 24)
             ylabel(y_axis_label,'fontsize', 24)
-            colorbar
-            colormap('gray')
+            % colorbar
+            %colormap('gray')
             plt = [plotDir, '/', pltGStr, '_lag.eps']
-            print('-deps', plt)
+            print('-depsc', plt)
 
             % figure
             % myPcolor(X,Y, muB(:,:,gEidx, gIidx) / 1000)
-            % titlestr=sprintf(['mean burst duration (s)\ngE = %1.1f, ' ...
-            %                   'gI = %1.1f'], ...
+            % titlestr=sprintf(['mean burst duration (s)\ng_E = %1.1f, ' ...
+            %                   'g_I = %1.1f'], ...
             %                  gE,gI);
             % title(titlestr, 'fontsize', 32)
             % title('mean burst duration (s)','fontsize', 32)
             % xlabel(x_axis_label,'fontsize', 24)
             % ylabel(y_axis_label,'fontsize', 24)
-            % colorbar
-            % colormap('gray')
+            % % colorbar
+            % %colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_mean_burst.eps']
-            % print('-deps', plt)
+            % print('-depsc', plt)
 
             % figure
             % myPcolor(X,Y, muIBI(:,:,gEidx, gIidx) / 1000)
-            % titlestr=sprintf('mean IBI (s)\ngE = %1.1f, gI = %1.1f',...
+            % titlestr=sprintf('mean IBI (s)\ng_E = %1.1f, g_I = %1.1f',...
             %                  gE,gI);
             % title(titlestr, 'fontsize', 32)
             % xlabel(x_axis_label,'fontsize', 24)
             % ylabel(y_axis_label,'fontsize', 24)
-            % colorbar
-            % colormap('gray')
+            % % colorbar
+            % %colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_mean_IBI.eps']
-            % print('-deps', plt)
+            % print('-depsc', plt)
 
             % figure
             % myPcolor(X,Y, cvIBI(:,:,gEidx, gIidx))
-            % titlestr=sprintf('CV of IBIs\ngE = %1.1f, gI = %1.1f',...
+            % titlestr=sprintf('CV of IBIs\ng_E = %1.1f, g_I = %1.1f',...
             %                  gE,gI);
             % title(titlestr, 'fontsize', 32)
             % xlabel(x_axis_label,'fontsize', 24)
             % ylabel(y_axis_label,'fontsize', 24)
-            % colorbar
-            % colormap('gray')
+            % % colorbar
+            % %colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_cv_IBIs.eps']
-            % print('-deps', plt)
+            % print('-depsc', plt)
 
             % figure
             % myPcolor(X,Y, cvB(:,:,gEidx, gIidx))
-            % titlestr=sprintf('CV burst lengths\ngE = %1.1f, gI = %1.1f',...
+            % titlestr=sprintf('CV burst lengths\ng_E = %1.1f, g_I = %1.1f',...
             %                  gE,gI);
             % title(titlestr, 'fontsize', 32)
             % xlabel(x_axis_label,'fontsize', 24)
             % ylabel(y_axis_label,'fontsize', 24)
-            % colorbar
-            % colormap('gray')
+            % % colorbar
+            % %colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_cv_bursts.eps']
-            % print('-deps', plt)
+            % print('-depsc', plt)
 
             figure
             myPcolor(X,Y, op_angle_mean(:,:,gEidx, gIidx))
-            titlestr=sprintf('mean OP phase\ngE = %1.1f, gI = %1.1f',...
+            titlestr=sprintf('mean OP phase\ng_E = %1.1f, g_I = %1.1f',...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
             xlabel(x_axis_label,'fontsize', 24)
             ylabel(y_axis_label,'fontsize', 24)
-            colorbar
-            colormap('gray')
+            % colorbar
+            %colormap('gray')
             plt = [plotDir, '/', pltGStr, '_op_angle_mean.eps']
-            print('-deps', plt)
+            print('-depsc', plt)
 
             figure
             myPcolor(X,Y, op_angle_std(:,:,gEidx, gIidx))
-            titlestr=sprintf(['std. of OP phase\ngE = ' ...
-                              '%1.1f, gI = %1.1f'],...
+            titlestr=sprintf(['std. of OP phase\ng_E = ' ...
+                              '%1.1f, g_I = %1.1f'],...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
             xlabel(x_axis_label,'fontsize', 24)
             ylabel(y_axis_label,'fontsize', 24)
-            colorbar
-            colormap('gray')
+            % colorbar
+            %colormap('gray')
             plt = [plotDir, '/', pltGStr, '_op_angle_std.eps']
-            print('-deps', plt)
+            print('-depsc', plt)
 
             figure
-            myPcolor(X,Y, num_expir(:,:,gEidx, gIidx))
-            titlestr=sprintf(['# expiratory\ngE = ' ...
-                              '%1.1f, gI = %1.1f'],...
+            tmp=num_expir(:,:,gEidx, gIidx);
+            tmp(~chi_mask)=nan;
+            myPcolor(X,Y, tmp)
+            titlestr=sprintf(['# expiratory\ng_E = ' ...
+                              '%1.1f, g_I = %1.1f'],...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
             xlabel(x_axis_label,'fontsize', 24)
             ylabel(y_axis_label,'fontsize', 24)
-            colorbar
-            colormap('gray')
+            % colorbar
+            %colormap('gray')
             plt = [plotDir, '/', pltGStr, '_num_expir.eps']
-            print('-deps', plt)
+            print('-depsc', plt)
             
-            
+            expir_mask=num_expir(:,:,gEidx,gIidx) > ...
+                expir_threshold;
+            intersection_mask = chi_mask & expir_mask;
+
+            % figure
+            % myPcolor(X,Y, intersection_mask, flipud(gray(2)))
+            % titlestr=sprintf(['synchrony & expiration\ng_E = ' ...
+            %                   '%1.1f, g_I = %1.1f'],...
+            %                  gE,gI);
+            % title(titlestr, 'fontsize', 32)
+            % xlabel(x_axis_label,'fontsize', 24)
+            % ylabel(y_axis_label,'fontsize', 24)
+            % colorbar off
+            % %colormap('gray')
+            % plt = [plotDir, '/', pltGStr, '_expir_times_chi.eps']
+            % print('-depsc', plt)
             close all
         end % gI
     end % gE
@@ -260,9 +283,9 @@ if dopartics
                 set(h2, 'xtick', get(h1,'xtick'))
                 set(h2, 'xticklabel', get(h1,'xticklabel'))
                 %plt = [plotDir, '/ts_raster.eps']
-                %print('-deps', plt)
+                %print('-depsc', plt)
                 plt = [plotDir, '/', pltGStr, 'ts_combined_' partic '.eps']
-                print('-deps', plt)
+                print('-depsc', plt)
                 %% order parameter plot
                 figure
                 plot(opAngle/pi, opAbs, 'k.')
@@ -273,7 +296,7 @@ if dopartics
                 xlim([-1, 1])
                 title('neuron order parameters')
                 plt = [plotDir, '/', pltGStr, 'op_' partic '.eps']
-                print('-deps', plt)
+                print('-depsc', plt)
 
                 close all
             end
