@@ -116,11 +116,16 @@ avg_firing_rate =np.divide(avg_firing_rate,numRep)
 X = np.transpose(np.tile(ks, (numpI, 1)))
 Y = np.tile(pIs, (numk, 1))
 
+Xg= np.transpose(np.tile(gEs, (numgI,1)))
+Yg= np.tile(gIs, (numgE,1))
+
 fErr.close()
 
 scipy.io.savemat(outFn,
                  mdict={'X':X,
                         'Y':Y,
+                        'Xg': Xg,
+                        'Yg': Yg,
                         'chiArray':chiArray,
                         # 'dutyCycle':dutyCycle,
                         # 'muIBI': muIBI,
