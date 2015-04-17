@@ -11,6 +11,7 @@ import os
 import numpy as np
 import scipy.io
 import matplotlib.pyplot as plt
+import progressbar
 
 #### config here
 projName = "random_extend"
@@ -67,6 +68,13 @@ op_angle_std = np.zeros((numk, numpI, numgE, numgI, numrep), dtype=np.float)
 num_expir = np.zeros((numk, numpI, numgE, numgI, numrep), dtype=np.float)
 avg_firing_rate = np.zeros((numk, numpI, numgE, numgI, numrep), dtype=np.float)
 
+print("Running integration loop....")
+bar_updates = 100
+widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()]
+bar = progressbar.ProgressBar(maxval=bar_updates, widgets=widgets)
+bar.start()
+bar_i = 0
+nstep=len(splitLines)
 for i in range(len(splitLines)):
     run = splitLines[i,:]
     postFile = run[2]
@@ -93,6 +101,10 @@ for i in range(len(splitLines)):
         cmd = postLines[i]
         print cmd
         fErr.write(cmd)
+    if ( i % np.floor(nstep/bar_updates) ) == 0:
+        bar.update(bar_i)
+        bar_i+=1
+bar.finish()
 
 # means over reps
 chiArray_mean = np.mean(chiArray,axis=4)
