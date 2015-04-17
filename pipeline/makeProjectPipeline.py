@@ -5,13 +5,13 @@ from itertools import product
 
 #### modify these:
 n = 300
-ks = np.arange(1.0, 6.5, 0.5)
+ks = np.arange(6.5, 12.5, 0.5)
 pIs = np.arange(0.0, 1.05, 0.05)
 gEs = np.arange(2.0, 6.0, 1.0)
 gIs = np.arange(2.0, 6.0, 1.0)
 reps = range(8)
 tf = 100000
-projName = "random_fine_g_sweep"
+projName = "random_fine_g_sweep_extend"
 ####
 
 print "setting up project '" + projName + "'"

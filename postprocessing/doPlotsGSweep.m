@@ -12,8 +12,10 @@ chi_threshold=0.25;
 num_neurons=300;
 expir_threshold=15;
 
-dopartics = 1;
+dopartics = 0;
 docombined = 1;
+do_k_vs_pI=1;
+do_gE_vs_gI=1;
 partics = {'er_n300_k1.0_deg_pI0.00_rep1',...
            'er_n300_k1.0_deg_pI0.10_rep1',...
            'er_n300_k1.0_deg_pI0.20_rep1',...
@@ -50,23 +52,26 @@ fn = [dataDir, '/post/collected.mat'];
 plotDir = [getenv('HOME') '/work/prebotc/data/', projName, ...
            '/plots'];
 
-x_axis_label='connectivity k_{avg}';
-y_axis_label='inhibitory fraction p_I';
 
 load(fn)
 numgE = length(gEs);
 numgI = length(gIs);
+num_k = length(ks);
+num_pI= length(pIs);
 if docombined
+    if do_k_vs_pI
     for gEidx = 1:numgE
         for gIidx = 1:numgI
+            x_axis_label='connectivity k_{avg}';
+            y_axis_label='inhibitory fraction p_I';
             gE = gEs(gEidx);
             gI = gIs(gIidx);
             
             pltGStr = sprintf('gE_%1.1f_gI_%1.1f', gE, gI);
 
             figure
-            myPcolor(X,Y, chiArray(:,:,gEidx, gIidx));
-            titlestr=sprintf('synchrony \\chi\ng_E = %1.1f, g_I = %1.1f', ...
+            myPcolor(X,Y, chiArray(:,:,gEidx, gIidx), 'clim', [0,1]);
+            titlestr=sprintf('Synchrony \\chi\ng_E = %1.1f, g_I = %1.1f', ...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
             xlabel(x_axis_label, 'fontsize', 24)
@@ -78,6 +83,20 @@ if docombined
             print('-depsc', plt)
 
             chi_mask=chiArray(:,:,gEidx,gIidx) > chi_threshold;
+            
+            
+            figure
+            myPcolor(X,Y, chiArray_std(:,:,gEidx, gIidx));
+            titlestr=sprintf('SD of \\chi\ng_E = %1.1f, g_I = %1.1f', ...
+                             gE,gI);
+            title(titlestr, 'fontsize', 32)
+            xlabel(x_axis_label, 'fontsize', 24)
+            ylabel(y_axis_label,'fontsize', 24)
+            %axis([0,1])
+            % colorbar
+            %colormap('gray')
+            plt = [plotDir, '/', pltGStr, '_chi_std.eps']
+            print('-depsc', plt)
             
             % figure
             % myPcolor(X,Y, dutyCycle(:,:,gEidx, gIidx))
@@ -92,7 +111,7 @@ if docombined
 
             figure
             myPcolor(X,Y, fMax(:,:,gEidx, gIidx))
-            titlestr=sprintf('peak frequency (Hz)\ng_E = %1.1f, g_I = %1.1f',...
+            titlestr=sprintf('Peak frequency (Hz)\ng_E = %1.1f, g_I = %1.1f',...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
             title('peak frequency (1/s)','fontsize', 32)
@@ -105,7 +124,7 @@ if docombined
 
             figure
             myPcolor(X,Y, lag(:,:,gEidx, gIidx))
-            titlestr=sprintf('dominant period (s)\ng_E = %1.1f, g_I = %1.1f',...
+            titlestr=sprintf('Period (s)\ng_E = %1.1f, g_I = %1.1f',...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
             xlabel(x_axis_label, 'fontsize', 24)
@@ -167,7 +186,7 @@ if docombined
 
             figure
             myPcolor(X,Y, op_angle_mean(:,:,gEidx, gIidx))
-            titlestr=sprintf('mean OP phase\ng_E = %1.1f, g_I = %1.1f',...
+            titlestr=sprintf('Mean OP phase\ng_E = %1.1f, g_I = %1.1f',...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
             xlabel(x_axis_label,'fontsize', 24)
@@ -179,7 +198,7 @@ if docombined
 
             figure
             myPcolor(X,Y, op_angle_std(:,:,gEidx, gIidx))
-            titlestr=sprintf(['std. of OP phase\ng_E = ' ...
+            titlestr=sprintf(['SD of OP phase\ng_E = ' ...
                               '%1.1f, g_I = %1.1f'],...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
@@ -194,7 +213,7 @@ if docombined
             tmp=num_expir(:,:,gEidx, gIidx)./num_neurons*100;
             tmp(~chi_mask)=nan;
             myPcolor(X,Y, tmp)
-            titlestr=sprintf(['%% expiratory\ng_E = ' ...
+            titlestr=sprintf(['Expiratory fraction\ng_E = ' ...
                               '%1.1f, g_I = %1.1f'],...
                              gE,gI);
             title(titlestr, 'fontsize', 32)
@@ -224,6 +243,50 @@ if docombined
             close all
         end % gI
     end % gE
+    end
+    
+    if do_gE_vs_gI
+    %% plot gE vs gI
+    for k_idx=1:num_k
+        for pI_idx=1:num_pI
+            k=ks(k_idx);
+            pI=pIs(pI_idx);
+            plt_str = sprintf('k_%1.1f_pI_%1.1f', k,pI);
+            x_axis_label='g_E';
+            y_axis_label='g_I';
+
+            figure
+            myPcolor(Xg,Yg, squeeze(chiArray(k_idx, pI_idx, :,:)),...
+                     'clim', [0,1])
+            titlestr=sprintf(['Synchrony \\chi\nk_{avg} = %1.1f, p_I ' ...
+                              '= %1.1f'], k,pI);
+            title(titlestr, 'fontsize', 32)
+            xlabel(x_axis_label, 'fontsize', 24)
+            ylabel(y_axis_label,'fontsize', 24)
+            %axis([0,1])
+            % colorbar
+            %colormap('gray')
+            plt = [plotDir, '/', plt_str, '_chi.eps']
+            print('-depsc', plt)
+
+            chi_mask=squeeze(chiArray(k_idx, pI_idx, :,:) > chi_threshold);
+
+            figure
+            myPcolor(Xg,Yg, squeeze(chiArray_std(k_idx, pI_idx, :,:)))
+            titlestr=sprintf(['SD of \\chi\nk_{avg} = %1.1f, p_I ' ...
+                              '= %1.1f'], k,pI);
+            title(titlestr, 'fontsize', 32)
+            xlabel(x_axis_label, 'fontsize', 24)
+            ylabel(y_axis_label,'fontsize', 24)
+            %axis([0,1])
+            % colorbar
+            %colormap('gray')
+            plt = [plotDir, '/', plt_str, '_chi.eps']
+            print('-depsc', plt)
+        
+        end
+    end
+    end
 end
 
 if dopartics
