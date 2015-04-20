@@ -58,17 +58,16 @@ print "num gE: " + str(numgE)
 print "num gI: " + str(numgI)
 print "num rep: " + str(numRep)
 
-
 ## setup the collected arrays
-chiArray = np.zeros((numk, numpI, numgE, numgI, numrep), dtype=np.float)
-fMax = np.zeros((numk, numpI, numgE, numgI, numrep), dtype=np.float)
-lag = np.zeros((numk, numpI, numgE, numgI, numrep), dtype=np.float)
-op_angle_mean = np.zeros((numk, numpI, numgE, numgI, numrep), dtype=np.float)
-op_angle_std = np.zeros((numk, numpI, numgE, numgI, numrep), dtype=np.float)
-num_expir = np.zeros((numk, numpI, numgE, numgI, numrep), dtype=np.float)
-avg_firing_rate = np.zeros((numk, numpI, numgE, numgI, numrep), dtype=np.float)
+chiArray = np.zeros((numk, numpI, numgE, numgI, numRep), dtype=np.float)
+fMax = np.zeros((numk, numpI, numgE, numgI, numRep), dtype=np.float)
+lag = np.zeros((numk, numpI, numgE, numgI, numRep), dtype=np.float)
+op_angle_mean = np.zeros((numk, numpI, numgE, numgI, numRep), dtype=np.float)
+op_angle_std = np.zeros((numk, numpI, numgE, numgI, numRep), dtype=np.float)
+num_expir = np.zeros((numk, numpI, numgE, numgI, numRep), dtype=np.float)
+avg_firing_rate = np.zeros((numk, numpI, numgE, numgI, numRep), dtype=np.float)
 
-print("Running integration loop....")
+print("Looping over all postprocessing output....")
 bar_updates = 100
 widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()]
 bar = progressbar.ProgressBar(maxval=bar_updates, widgets=widgets)
@@ -94,10 +93,17 @@ for i in range(len(splitLines)):
         op_angle_std[idx] = float(M['op_angle_std'])
         num_expir[idx] = float(M['num_expir'])
         avg_firing_rate[idx] = float(M['avg_firing_rate'])
-    except IOError, KeyError:
+    except (IOError, KeyError):
         # simOutFn = run[1]
         # cmd = "./doPost.py " + simOutFn + " " + postFile + "\n"
-        print postFile + " is missing, writing command:"
+        print postFile + " is missing"
+        print "Writing command:"
+        cmd = postLines[i]
+        print cmd
+        fErr.write(cmd)
+    except:
+        print "Unexpected error in " + postFile
+        print "Writing command:"
         cmd = postLines[i]
         print cmd
         fErr.write(cmd)
@@ -118,7 +124,7 @@ avg_firing_rate_mean =np.mean(avg_firing_rate,axis=4)
 chiArray_std = np.std(chiArray,axis=4)
 fMax_std = np.std(fMax, axis=4)
 lag_std = np.std(lag, axis=4)
-op_angle_std_std = np.std(op_angle_mean, axis=4)
+op_angle_mean_std = np.std(op_angle_mean, axis=4)
 op_angle_std_std = np.std(op_angle_std, axis=4)
 num_expir_std =np.std(num_expir,axis=4)
 avg_firing_rate_std =np.std(avg_firing_rate,axis=4)
