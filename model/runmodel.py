@@ -195,7 +195,7 @@ def main(argv=None):
                    'finalState': y,
                    'icStr': ic_str
                },
-            oned_as = 'column')
+            oned_as = 'column', do_compression=True)
     if not quiet:
         elapsed = time.time() - t
         print("Done!\nSave time: %1.2fs" % elapsed)

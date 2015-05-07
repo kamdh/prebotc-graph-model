@@ -66,6 +66,10 @@ op_angle_mean = np.zeros((numk, numpI, numgE, numgI, numRep), dtype=np.float)
 op_angle_std = np.zeros((numk, numpI, numgE, numgI, numRep), dtype=np.float)
 num_expir = np.zeros((numk, numpI, numgE, numgI, numRep), dtype=np.float)
 avg_firing_rate = np.zeros((numk, numpI, numgE, numgI, numRep), dtype=np.float)
+amplitude_irregularity = np.zeros((numk, numpI, numgE, numgI, numRep),
+                                  dtype=np.float)
+ibi_irregularity = np.zeros((numk, numpI, numgE, numgI, numRep),
+                            dtype=np.float)
 
 print("Looping over all postprocessing output....")
 bar_updates = 100
@@ -93,6 +97,8 @@ for i in range(len(splitLines)):
         op_angle_std[idx] = float(M['op_angle_std'])
         num_expir[idx] = float(M['num_expir'])
         avg_firing_rate[idx] = float(M['avg_firing_rate'])
+        amplitude_irregularity[idx] = float(M['amplitude_irregularity'])
+        ibi_irregularity[idx] = float(M['ibi_irregularity'])
     except (IOError, KeyError):
         # simOutFn = run[1]
         # cmd = "./doPost.py " + simOutFn + " " + postFile + "\n"
@@ -113,22 +119,25 @@ for i in range(len(splitLines)):
 bar.finish()
 
 # means over reps
-chiArray_mean = np.mean(chiArray,axis=4)
-fMax_mean = np.mean(fMax, axis=4)
-lag_mean = np.mean(lag, axis=4)
-op_angle_mean_mean = np.mean(op_angle_mean, axis=4)
-op_angle_std_mean = np.mean(op_angle_std, axis=4)
-num_expir_mean =np.mean(num_expir,axis=4)
-avg_firing_rate_mean =np.mean(avg_firing_rate,axis=4)
+chiArray_mean=np.mean(chiArray,axis=4)
+fMax_mean=np.mean(fMax, axis=4)
+lag_mean=np.mean(lag, axis=4)
+op_angle_mean_mean=np.mean(op_angle_mean, axis=4)
+op_angle_std_mean=np.mean(op_angle_std, axis=4)
+num_expir_mean=np.mean(num_expir,axis=4)
+avg_firing_rate_mean=np.mean(avg_firing_rate,axis=4)
+amplitude_irregularity_mean=np.mean(amplitude_irregularity,axis=4)
+ibi_irregularity_mean=np.mean(ibi_irregularity,axis=4)
 # standard deviations over reps
-chiArray_std = np.std(chiArray,axis=4)
-fMax_std = np.std(fMax, axis=4)
-lag_std = np.std(lag, axis=4)
-op_angle_mean_std = np.std(op_angle_mean, axis=4)
-op_angle_std_std = np.std(op_angle_std, axis=4)
-num_expir_std =np.std(num_expir,axis=4)
-avg_firing_rate_std =np.std(avg_firing_rate,axis=4)
-
+chiArray_std=np.std(chiArray,axis=4)
+fMax_std=np.std(fMax, axis=4)
+lag_std=np.std(lag, axis=4)
+op_angle_mean_std=np.std(op_angle_mean, axis=4)
+op_angle_std_std=np.std(op_angle_std, axis=4)
+num_expir_std=np.std(num_expir,axis=4)
+avg_firing_rate_std=np.std(avg_firing_rate,axis=4)
+amplitude_irregularity_std=np.std(amplitude_irregularity,axis=4)
+ibi_irregularity_std=np.std(ibi_irregularity,axis=4)
 
 X = np.transpose(np.tile(ks,(numpI,1)))
 Y = np.tile(pIs,(numk,1))
@@ -150,6 +159,8 @@ scipy.io.savemat(outFn,
                         'op_angle_std': op_angle_std_mean,
                         'num_expir': num_expir_mean,
                         'avg_firing_rate': avg_firing_rate_mean,
+                        'amplitude_irregularity':amplitude_irregularity_mean,
+                        'ibi_irregularity':ibi_irregularity_mean,
                         'chiArray_std':chiArray_std,
                         'fMax_std': fMax_std,
                         'lag_std': lag_std,
@@ -157,6 +168,8 @@ scipy.io.savemat(outFn,
                         'op_angle_std_std': op_angle_std_std,
                         'num_expir_std': num_expir_std,
                         'avg_firing_rate_std': avg_firing_rate_std,
+                        'amplitude_irregularity_std':amplitude_irregularity_std,
+                        'ibi_irregularity_std':ibi_irregularity_std,
                         'ks': ks,
                         'pIs': pIs,
                         'gEs': gEs,

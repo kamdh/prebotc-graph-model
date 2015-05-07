@@ -173,6 +173,10 @@ def main(argv=None):
     ibi_vec=np.diff(pop_burst_peak)*bin_width*dt/1000.0
     ibi_mean=np.mean(ibi_vec)
     ibi_cv=np.std(ibi_vec)/ibi_mean
+    ibi_irregularity=irregularity_score(ibi_vec)
+    amplitude_irregularity=irregularity_score(butter_int_bin[pop_burst_peak])
+    amplitude_cv=np.std(butter_int_bin[pop_burst_peak])/\
+      np.mean(butter_int_bin[pop_burst_peak])
 
     ## Compute event triggered averages
     ## First, using absolute time
@@ -237,6 +241,9 @@ def main(argv=None):
                             # 'burst_length_mean': burst_length_mean,
                             # 'burst_length_cv': burst_length_cv,
                             'ibi_vec': ibi_vec,
+                            'ibi_irregularity' : ibi_irregularity,
+                            'amplitude_irregularity' : amplitude_irregularity,
+                            'amplitude_cv' : amplitude_cv,
                             # 'burst_lengths': burst_lengths,
                             # 'burst_start_locs': burst_start_locs,
                             # 'burst_peak_locs': burst_peak_locs,
@@ -265,10 +272,10 @@ def main(argv=None):
                             'eta_avg_expir': avg_expir,
                             'eta_avg_tonic': avg_tonic,
                             'eta_avg_silent': avg_silent,
-                            'mask_inspir': mask_inspir,
-                            'mask_expir': mask_expir,
-                            'mask_silent': mask_silent,
-                            'mask_tonic': mask_tonic,
+                            'mask_inspir': np.array(mask_inspir,dtype=np.int),
+                            'mask_expir': np.array(mask_expir,dtype=np.int),
+                            'mask_silent': np.array(mask_silent,dtype=np.int),
+                            'mask_tonic': np.array(mask_tonic,dtype=np.int),
                             'num_silent': num_silent,
                             'num_expir': num_expir,
                             'num_inspir': num_inspir,
@@ -278,7 +285,7 @@ def main(argv=None):
                             'bin_adj': bin_adj,
                             'mrf_coeff': mrf_coeff
                         },
-                     oned_as='column')
+                     oned_as='column', do_compression=True)
 
 # run the main stuff
 if __name__ == '__main__':

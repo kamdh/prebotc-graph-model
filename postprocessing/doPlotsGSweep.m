@@ -43,7 +43,7 @@ partics = {'er_n300_k1.0_deg_pI0.00_rep1',...
            'er_n300_k6.0_deg_pI0.90_rep1', ...
            'er_n300_k6.0_deg_pI1.00_rep1' 
           };
-projName = 'random_fine_g_sweep';
+projName = 'random_extend';
 opThresh = 0.2;
 
 %% start processing
@@ -96,6 +96,35 @@ if docombined
             % colorbar
             %colormap('gray')
             plt = [plotDir, '/', pltGStr, '_chi_std.eps']
+            print('-depsc', plt)
+            
+
+            figure
+            myPcolor(X,Y, amplitude_irregularity(:,:,gEidx, gIidx), ...
+                     'clim', [0,1]);
+            titlestr=sprintf(['Amplitude irregularity\ng_E = %1.1f, ' ...
+                              'g_I = %1.1f'],gE,gI);
+            title(titlestr, 'fontsize', 32)
+            xlabel(x_axis_label, 'fontsize', 24)
+            ylabel(y_axis_label,'fontsize', 24)
+            %axis([0,1])
+            % colorbar
+            %colormap('gray')
+            plt = [plotDir, '/', pltGStr, '_amp_irreg.eps']
+            print('-depsc', plt)
+
+            figure
+            myPcolor(X,Y, ibi_irregularity(:,:,gEidx, gIidx), ...
+                     'clim', [0,1]);
+            titlestr=sprintf(['IBI irregularity\ng_E = %1.1f, ' ...
+                              'g_I = %1.1f'],gE,gI);
+            title(titlestr, 'fontsize', 32)
+            xlabel(x_axis_label, 'fontsize', 24)
+            ylabel(y_axis_label,'fontsize', 24)
+            %axis([0,1])
+            % colorbar
+            %colormap('gray')
+            plt = [plotDir, '/', pltGStr, '_ibi_irreg.eps']
             print('-depsc', plt)
             
             % figure
@@ -281,9 +310,36 @@ if docombined
             %axis([0,1])
             % colorbar
             %colormap('gray')
-            plt = [plotDir, '/', plt_str, '_chi.eps']
+            plt = [plotDir, '/', plt_str, '_chi_std.eps']
             print('-depsc', plt)
         
+            figure
+            myPcolor(Xg,Yg,squeeze(amplitude_irregularity(k_idx,pI_idx,:,:)), ...
+                     'clim', [0,1]);
+            titlestr=sprintf(['Amplitude irregularity\nk_{avg} = %1.1f, ' ...
+                              'p_I = %1.1f'],k,pI);
+            title(titlestr, 'fontsize', 32)
+            xlabel(x_axis_label, 'fontsize', 24)
+            ylabel(y_axis_label,'fontsize', 24)
+            %axis([0,1])
+            % colorbar
+            %colormap('gray')
+            plt = [plotDir, '/', plt_str, '_amp_irreg.eps']
+            print('-depsc', plt)
+
+            figure
+            myPcolor(Xg,Yg,squeeze(ibi_irregularity(k_idx,pI_idx,:,:)), ...
+                     'clim', [0,1]);
+            titlestr=sprintf(['IBI irregularity\nk_{avg} = %1.1f, ' ...
+                              'p_I = %1.1f'],k,pI);
+            title(titlestr, 'fontsize', 32)
+            xlabel(x_axis_label, 'fontsize', 24)
+            ylabel(y_axis_label,'fontsize', 24)
+            %axis([0,1])
+            % colorbar
+            %colormap('gray')
+            plt = [plotDir, '/', plt_str, '_ibi_irreg.eps']
+            print('-depsc', plt)
         end
     end
     end
@@ -354,7 +410,9 @@ if dopartics
                 %plt = [plotDir, '/ts_raster.eps']
                 %print('-depsc', plt)
                 plt = [plotDir, '/', pltGStr, 'ts_combined_' partic '.eps']
-                print('-depsc', plt)
+                print('-deps', plt)
+
+                
                 %% order parameter plot
                 figure
                 plot(opAngle/pi, opAbs, 'k.')
@@ -365,7 +423,7 @@ if dopartics
                 xlim([-1, 1])
                 title('neuron order parameters')
                 plt = [plotDir, '/', pltGStr, 'op_' partic '.eps']
-                print('-depsc', plt)
+                print('-deps', plt)
 
                 close all
             end

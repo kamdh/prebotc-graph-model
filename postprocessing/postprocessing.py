@@ -491,3 +491,7 @@ def predict_ops_olm(ops, predictors):
     model=sm.OLS(ops, predictors)
     results=model.fit()
     return results
+
+def irregularity_score(ts):
+    return np.mean(np.abs(np.diff(ts))/ts[0:-1])
+    
