@@ -118,14 +118,10 @@ def main(argv=None):
     ##
     ## Other integration methods
     ## method 1: BDF
-    # r.set_integrator(
-    #     'vode', 
-    #     method='bdf', 
-    #     with_jacobian = False,
-    #     order=3,
-    #     rtol= rel_error,
-    #     atol= abs_error
-    #     )
+    r.set_integrator(
+        'vode', 
+        method='bdf'
+        )
     ## method 2: Dormand-Price
     # r.set_integrator(
     #     'dopri5', 
@@ -136,6 +132,8 @@ def main(argv=None):
     # r.set_integrator('vode',
     #                  rtol = rel_error,
     #                  atol = abs_error)
+    ## method 4: LSODA
+    #r.set_integrator('lsoda')
     if not quiet:
         print("Running integration loop....")
         t = time.time()
