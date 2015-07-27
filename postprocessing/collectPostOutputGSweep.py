@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import progressbar
 
 #### config here
-projName = "random_extend"
+projName = "g_sweep_fix"
 outFn = os.path.join(os.environ['HOME'], 'work', 'prebotc', 
                       'data', projName, 'post/collected.mat')
 
@@ -73,12 +73,12 @@ ibi_irregularity = np.zeros((numk, numpI, numgE, numgI, numRep),
 
 print("Looping over all postprocessing output....")
 bar_updates = 100
+nstep=len(splitLines)
 widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()]
-bar = progressbar.ProgressBar(maxval=bar_updates, widgets=widgets)
+bar = progressbar.ProgressBar(maxval=nstep, widgets=widgets)
 bar.start()
 bar_i = 0
-nstep=len(splitLines)
-for i in range(len(splitLines)):
+for i in range(nstep):
     run = splitLines[i,:]
     postFile = run[2]
     k = float(run[3])
@@ -114,7 +114,7 @@ for i in range(len(splitLines)):
         print cmd
         fErr.write(cmd)
     if ( i % np.floor(nstep/bar_updates) ) == 0:
-        bar.update(bar_i)
+        bar.update(i)
         bar_i+=1
 bar.finish()
 

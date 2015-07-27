@@ -11,11 +11,13 @@ set(0,'DefaultAxesLineWidth',1);
 chi_threshold=0.25;
 num_neurons=300;
 expir_threshold=15;
+fontsz=24;
 
-dopartics = 0;
+dopartics = 1;
 docombined = 1;
 do_k_vs_pI=1;
 do_gE_vs_gI=1;
+%partics = {'er_n300_k6.0_deg_pI0.20_rep1'};
 partics = {'er_n300_k1.0_deg_pI0.00_rep1',...
            'er_n300_k1.0_deg_pI0.10_rep1',...
            'er_n300_k1.0_deg_pI0.20_rep1',...
@@ -73,9 +75,9 @@ if docombined
             myPcolor(X,Y, chiArray(:,:,gEidx, gIidx), 'clim', [0,1]);
             titlestr=sprintf('Synchrony \\chi\ng_E = %1.1f, g_I = %1.1f', ...
                              gE,gI);
-            title(titlestr, 'fontsize', 32)
-            xlabel(x_axis_label, 'fontsize', 24)
-            ylabel(y_axis_label,'fontsize', 24)
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label, 'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
             %axis([0,1])
             % colorbar
             %colormap('gray')
@@ -89,9 +91,9 @@ if docombined
             myPcolor(X,Y, chiArray_std(:,:,gEidx, gIidx));
             titlestr=sprintf('SD of \\chi\ng_E = %1.1f, g_I = %1.1f', ...
                              gE,gI);
-            title(titlestr, 'fontsize', 32)
-            xlabel(x_axis_label, 'fontsize', 24)
-            ylabel(y_axis_label,'fontsize', 24)
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label, 'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
             %axis([0,1])
             % colorbar
             %colormap('gray')
@@ -100,13 +102,12 @@ if docombined
             
 
             figure
-            myPcolor(X,Y, amplitude_irregularity(:,:,gEidx, gIidx), ...
-                     'clim', [0,1]);
+            myPcolor(X,Y, amplitude_irregularity(:,:,gEidx, gIidx));
             titlestr=sprintf(['Amplitude irregularity\ng_E = %1.1f, ' ...
                               'g_I = %1.1f'],gE,gI);
-            title(titlestr, 'fontsize', 32)
-            xlabel(x_axis_label, 'fontsize', 24)
-            ylabel(y_axis_label,'fontsize', 24)
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label, 'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
             %axis([0,1])
             % colorbar
             %colormap('gray')
@@ -114,13 +115,12 @@ if docombined
             print('-depsc', plt)
 
             figure
-            myPcolor(X,Y, ibi_irregularity(:,:,gEidx, gIidx), ...
-                     'clim', [0,1]);
+            myPcolor(X,Y, ibi_irregularity(:,:,gEidx, gIidx));
             titlestr=sprintf(['IBI irregularity\ng_E = %1.1f, ' ...
                               'g_I = %1.1f'],gE,gI);
-            title(titlestr, 'fontsize', 32)
-            xlabel(x_axis_label, 'fontsize', 24)
-            ylabel(y_axis_label,'fontsize', 24)
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label, 'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
             %axis([0,1])
             % colorbar
             %colormap('gray')
@@ -130,9 +130,9 @@ if docombined
             % figure
             % myPcolor(X,Y, dutyCycle(:,:,gEidx, gIidx))
             % titlestr = sprintf('duty cycle\ng_E = %1.1f, g_I = %1.1f', gE,gI);
-            % title(titlestr, 'fontsize', 32)
-            % xlabel(x_axis_label, 'fontsize', 24)
-            % ylabel(y_axis_label,'fontsize', 24)
+            % title(titlestr, 'fontsize', fontsz)
+            % xlabel(x_axis_label, 'fontsize', fontsz)
+            % ylabel(y_axis_label,'fontsize', fontsz)
             % % colorbar
             % %colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_duty_cycle.eps']
@@ -142,10 +142,10 @@ if docombined
             myPcolor(X,Y, fMax(:,:,gEidx, gIidx))
             titlestr=sprintf('Peak frequency (Hz)\ng_E = %1.1f, g_I = %1.1f',...
                              gE,gI);
-            title(titlestr, 'fontsize', 32)
-            title('peak frequency (1/s)','fontsize', 32)
-            xlabel(x_axis_label, 'fontsize', 24)
-            ylabel(y_axis_label,'fontsize', 24)
+            title(titlestr, 'fontsize', fontsz)
+            title('peak frequency (1/s)','fontsize', fontsz)
+            xlabel(x_axis_label, 'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
             % colorbar
             %colormap('gray')
             plt = [plotDir, '/', pltGStr, '_peak_freq.eps']
@@ -155,9 +155,9 @@ if docombined
             myPcolor(X,Y, lag(:,:,gEidx, gIidx))
             titlestr=sprintf('Period (s)\ng_E = %1.1f, g_I = %1.1f',...
                              gE,gI);
-            title(titlestr, 'fontsize', 32)
-            xlabel(x_axis_label, 'fontsize', 24)
-            ylabel(y_axis_label,'fontsize', 24)
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label, 'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
             % colorbar
             %colormap('gray')
             plt = [plotDir, '/', pltGStr, '_lag.eps']
@@ -168,10 +168,10 @@ if docombined
             % titlestr=sprintf(['mean burst duration (s)\ng_E = %1.1f, ' ...
             %                   'g_I = %1.1f'], ...
             %                  gE,gI);
-            % title(titlestr, 'fontsize', 32)
-            % title('mean burst duration (s)','fontsize', 32)
-            % xlabel(x_axis_label,'fontsize', 24)
-            % ylabel(y_axis_label,'fontsize', 24)
+            % title(titlestr, 'fontsize', fontsz)
+            % title('mean burst duration (s)','fontsize', fontsz)
+            % xlabel(x_axis_label,'fontsize', fontsz)
+            % ylabel(y_axis_label,'fontsize', fontsz)
             % % colorbar
             % %colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_mean_burst.eps']
@@ -181,9 +181,9 @@ if docombined
             % myPcolor(X,Y, muIBI(:,:,gEidx, gIidx) / 1000)
             % titlestr=sprintf('mean IBI (s)\ng_E = %1.1f, g_I = %1.1f',...
             %                  gE,gI);
-            % title(titlestr, 'fontsize', 32)
-            % xlabel(x_axis_label,'fontsize', 24)
-            % ylabel(y_axis_label,'fontsize', 24)
+            % title(titlestr, 'fontsize', fontsz)
+            % xlabel(x_axis_label,'fontsize', fontsz)
+            % ylabel(y_axis_label,'fontsize', fontsz)
             % % colorbar
             % %colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_mean_IBI.eps']
@@ -193,9 +193,9 @@ if docombined
             % myPcolor(X,Y, cvIBI(:,:,gEidx, gIidx))
             % titlestr=sprintf('CV of IBIs\ng_E = %1.1f, g_I = %1.1f',...
             %                  gE,gI);
-            % title(titlestr, 'fontsize', 32)
-            % xlabel(x_axis_label,'fontsize', 24)
-            % ylabel(y_axis_label,'fontsize', 24)
+            % title(titlestr, 'fontsize', fontsz)
+            % xlabel(x_axis_label,'fontsize', fontsz)
+            % ylabel(y_axis_label,'fontsize', fontsz)
             % % colorbar
             % %colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_cv_IBIs.eps']
@@ -205,9 +205,9 @@ if docombined
             % myPcolor(X,Y, cvB(:,:,gEidx, gIidx))
             % titlestr=sprintf('CV burst lengths\ng_E = %1.1f, g_I = %1.1f',...
             %                  gE,gI);
-            % title(titlestr, 'fontsize', 32)
-            % xlabel(x_axis_label,'fontsize', 24)
-            % ylabel(y_axis_label,'fontsize', 24)
+            % title(titlestr, 'fontsize', fontsz)
+            % xlabel(x_axis_label,'fontsize', fontsz)
+            % ylabel(y_axis_label,'fontsize', fontsz)
             % % colorbar
             % %colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_cv_bursts.eps']
@@ -215,11 +215,11 @@ if docombined
 
             figure
             myPcolor(X,Y, op_angle_mean(:,:,gEidx, gIidx))
-            titlestr=sprintf('Mean OP phase\ng_E = %1.1f, g_I = %1.1f',...
+            titlestr=sprintf('Mean phase arg(z)\ng_E = %1.1f, g_I = %1.1f',...
                              gE,gI);
-            title(titlestr, 'fontsize', 32)
-            xlabel(x_axis_label,'fontsize', 24)
-            ylabel(y_axis_label,'fontsize', 24)
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label,'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
             % colorbar
             %colormap('gray')
             plt = [plotDir, '/', pltGStr, '_op_angle_mean.eps']
@@ -227,12 +227,12 @@ if docombined
 
             figure
             myPcolor(X,Y, op_angle_std(:,:,gEidx, gIidx))
-            titlestr=sprintf(['SD of OP phase\ng_E = ' ...
+            titlestr=sprintf(['SD of phase arg(z)\ng_E = ' ...
                               '%1.1f, g_I = %1.1f'],...
                              gE,gI);
-            title(titlestr, 'fontsize', 32)
-            xlabel(x_axis_label,'fontsize', 24)
-            ylabel(y_axis_label,'fontsize', 24)
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label,'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
             % colorbar
             %colormap('gray')
             plt = [plotDir, '/', pltGStr, '_op_angle_std.eps']
@@ -242,12 +242,12 @@ if docombined
             tmp=num_expir(:,:,gEidx, gIidx)./num_neurons*100;
             tmp(~chi_mask)=nan;
             myPcolor(X,Y, tmp)
-            titlestr=sprintf(['Expiratory fraction\ng_E = ' ...
+            titlestr=sprintf(['Percent expiratory\ng_E = ' ...
                               '%1.1f, g_I = %1.1f'],...
                              gE,gI);
-            title(titlestr, 'fontsize', 32)
-            xlabel(x_axis_label,'fontsize', 24)
-            ylabel(y_axis_label,'fontsize', 24)
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label,'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
             % colorbar
             %colormap('gray')
             plt = [plotDir, '/', pltGStr, '_num_expir.eps']
@@ -262,9 +262,9 @@ if docombined
             % titlestr=sprintf(['synchrony & expiration\ng_E = ' ...
             %                   '%1.1f, g_I = %1.1f'],...
             %                  gE,gI);
-            % title(titlestr, 'fontsize', 32)
-            % xlabel(x_axis_label,'fontsize', 24)
-            % ylabel(y_axis_label,'fontsize', 24)
+            % title(titlestr, 'fontsize', fontsz)
+            % xlabel(x_axis_label,'fontsize', fontsz)
+            % ylabel(y_axis_label,'fontsize', fontsz)
             % colorbar off
             % %colormap('gray')
             % plt = [plotDir, '/', pltGStr, '_expir_times_chi.eps']
@@ -281,17 +281,17 @@ if docombined
             k=ks(k_idx);
             pI=pIs(pI_idx);
             plt_str = sprintf('k_%1.1f_pI_%1.1f', k,pI);
-            x_axis_label='g_E';
-            y_axis_label='g_I';
+            x_axis_label='g_E (nS)';
+            y_axis_label='g_I (nS)';
 
             figure
             myPcolor(Xg,Yg, squeeze(chiArray(k_idx, pI_idx, :,:)),...
                      'clim', [0,1])
             titlestr=sprintf(['Synchrony \\chi\nk_{avg} = %1.1f, p_I ' ...
                               '= %1.1f'], k,pI);
-            title(titlestr, 'fontsize', 32)
-            xlabel(x_axis_label, 'fontsize', 24)
-            ylabel(y_axis_label,'fontsize', 24)
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label, 'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
             %axis([0,1])
             % colorbar
             %colormap('gray')
@@ -304,9 +304,9 @@ if docombined
             myPcolor(Xg,Yg, squeeze(chiArray_std(k_idx, pI_idx, :,:)))
             titlestr=sprintf(['SD of \\chi\nk_{avg} = %1.1f, p_I ' ...
                               '= %1.1f'], k,pI);
-            title(titlestr, 'fontsize', 32)
-            xlabel(x_axis_label, 'fontsize', 24)
-            ylabel(y_axis_label,'fontsize', 24)
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label, 'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
             %axis([0,1])
             % colorbar
             %colormap('gray')
@@ -318,9 +318,9 @@ if docombined
                      'clim', [0,1]);
             titlestr=sprintf(['Amplitude irregularity\nk_{avg} = %1.1f, ' ...
                               'p_I = %1.1f'],k,pI);
-            title(titlestr, 'fontsize', 32)
-            xlabel(x_axis_label, 'fontsize', 24)
-            ylabel(y_axis_label,'fontsize', 24)
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label, 'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
             %axis([0,1])
             % colorbar
             %colormap('gray')
@@ -332,9 +332,9 @@ if docombined
                      'clim', [0,1]);
             titlestr=sprintf(['IBI irregularity\nk_{avg} = %1.1f, ' ...
                               'p_I = %1.1f'],k,pI);
-            title(titlestr, 'fontsize', 32)
-            xlabel(x_axis_label, 'fontsize', 24)
-            ylabel(y_axis_label,'fontsize', 24)
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label, 'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
             %axis([0,1])
             % colorbar
             %colormap('gray')
@@ -367,6 +367,7 @@ if dopartics
 
                 B = load(fn2);
                 vTypes = B.vertex_types;
+                chival=B.chi;
                 [Y,I] = sort(vTypes);
                 trans = 12;
                 binWidth = double( max(diff(B.bins)) ) / 1000;
@@ -382,6 +383,9 @@ if dopartics
                 peaklocs = peaklocs - trans + 2; % +1 for trans, +1 for
                                                  % python 0-indexing
                 
+                
+                set(0,'DefaultAxesFontSize', fontsz)
+                
                 figure
                 set(gcf, 'position', [1118, 727, 2675, 500])
                 %% subplot 1
@@ -390,42 +394,72 @@ if dopartics
                 plot(thebins, butterIntBin, 'k-')
                 hold on
                 plot(thebins(peaklocs), butterIntBin(peaklocs), 'ko')
-                ylabel('\int preBot (Hz/neuron)', 'fontsize', 20)
-                tmp = get(gca, 'ylim');
+                %ylabel('\int preBot (Hz/neuron)', 'fontsize', 20)
+                ylabel('x^{\rm int} (Hz/cell)','fontsize',28)
                 axis tight
+                tmp = get(gca, 'ylim');
+                tmp(2)=1.05*tmp(2); % add 5 pct padding to ylim
                 set(h1, 'ylim', [0, tmp(2)]);
+                str=sprintf('\\chi = %1.3f',chival);
+                ann_x=[73,6];
+                ann_y=[0.15,0.3]*tmp(2);
+                drawnow
+                rectangle('position', ...
+                          [ann_x(1)-.15,ann_y(1)-0.02*tmp(2),...
+                           ann_x(2),ann_y(2)],...
+                          'facecolor', 'w')
+                text(ann_x(1),ann_y(1), str, ...
+                     'fontsize', 28, 'verticalalignment', 'bottom');
                 %% subplot 2
                 h2 = subplot(2,1,2);
                 axis(h2)
                 imagesc(thebins, 1:size(binCt,1), binCt(I,:));
-                xlabel('t (s)', 'fontsize', 20)
+                xlabel('time (s)', 'fontsize', 28)
                 colormap(flipud(colormap('gray')))
-                set(h2, 'xticklabel', get(h1, 'xticklabel'))
+                % set(h2, 'xtick', get(h1, 'xtick'))
+                % set(h2, 'xticklabel', get(h1, 'xticklabel'))
                 %spy(binCt(I,:), 'k', 1)
                 %xlabel(['time bin (' num2str(binWidth*1000) ' ms)'])
-                ylabel('sorted neurons', 'fontsize', 20)
+                ylabel('neurons', 'fontsize', 28)
                 %% finalize and print
-                set(h2, 'xtick', get(h1,'xtick'))
+                set(h2, 'xtick', 10:10:70)
                 set(h2, 'xticklabel', get(h1,'xticklabel'))
+                % ann_x=[73,6];
+                % ann_y=[0.3,0.2]*max(buttrIntBin);
+                % [ann_nf_x,ann_nf_y]=ds2nfu(h1,ann_x,ann_y);
+                % annotation('textbox', ...
+                %            [ann_nf_x(1),ann_nf_y(1),...
+                %             ann_nf_x(2),ann_nf_y(2)], ...
+                %            'String', str, ...
+                %            'fontsize', fontsz, ...
+                %            'backgroundcolor', 'w',...
+                %            'fitboxtotext', 'off');
                 %plt = [plotDir, '/ts_raster.eps']
                 %print('-depsc', plt)
                 plt = [plotDir, '/', pltGStr, 'ts_combined_' partic '.eps']
                 print('-deps', plt)
-
+                %pause                
                 
                 %% order parameter plot
+                set(0,'DefaultAxesFontSize', 18)
                 figure
                 plot(opAngle/pi, opAbs, 'k.')
-                xlabel('angle (\pi radians)')
-                ylabel('magnitude')
+                xlabel('angle (\pi radians)', 'fontsize', fontsz)
+                ylabel('magnitude', 'fontsize', fontsz)
                 hline(opThresh, 'k--')
+                %y=get(gca,'ylim');
+                hold on;
+                plot([-.5,-.5],[opThresh,1],'k--');
+                plot([.5,.5],[opThresh,1],'k--');
                 ylim([0, 1])
                 xlim([-1, 1])
-                title('neuron order parameters')
+                title('Phase-locking variable','fontsize',fontsz)
                 plt = [plotDir, '/', pltGStr, 'op_' partic '.eps']
                 print('-deps', plt)
 
+                
                 close all
+                
             end
         end
     end

@@ -36,7 +36,7 @@ def fit_MRF_pseudolikelihood(adj_exc,adj_inh,y):
         model=LogisticRegression(penalty='l2')
         X=np.column_stack((X1,X2,X3,X4))
         model.fit(X,y)
-        B=model.raw_coef_.flatten()
+        B=np.hstack((model.intercept_, model.coef_.flatten()))
     return B
     
 def predict_MRF(B, adj_exc, adj_inh, burn_in=4e3, steps=1e4,

@@ -124,6 +124,10 @@ def main(argv=None):
     dt=float(sim_output['dt']) * scalet
     data=chop_transient(sim_output['Y'], trans, dt)
     num_neurons=np.shape(data)[0]
+
+    ## Load in graph data
+    (vertex_types, vertex_inh, vertex_respir_area, graph_adj, bin_adj,
+     adj_exc, adj_inh)=graph_attributes(graph_fn)
     
     ## Begin postprocessing
     ## spike trains
@@ -138,9 +142,15 @@ def main(argv=None):
     
     ## Filter spike raster for integrated activity, filtered spike trains
     spike_fil, butter_int=filter_spikes(spike_mat, dt/1000.0, 
-                                      f_sigma, butter_freq)
+                                        f_sigma, butter_freq)
+    elec_neur=np.bitwise_or(vertex_types==2, # TS
+                            vertex_types==3) # Q
+    spike_fil_elec, butter_int_elec= \
+      filter_spikes(spike_mat[elec_neur,], dt/1000.0, f_sigma, butter_freq)
     spike_fil_bin=bin_subsamp(spike_fil, bins)
+    spike_fil_bin_elec=bin_subsamp(spike_fil_elec, bins)
     butter_int_bin=bin_subsamp(butter_int, bins).flatten()
+    butter_int_bin_elec=bin_subsamp(butter_int_elec, bins).flatten()
     # spike_fil_bin,butter_int_bin=filter_spikes(spike_mat_bin, 
     #                                            dt*bin_width/1000.0, 
     #                                            f_sigma, 
@@ -152,7 +162,8 @@ def main(argv=None):
     if are_volts:
         chi, autocorr=synchrony_stats(data, dt)
     else:
-        chi, autocorr=synchrony_stats(spike_fil_bin, dt*bin_width)
+        chi, autocorr=synchrony_stats(spike_fil_bin, dt*bin_width/1000.)
+    chi_elec, _=synchrony_stats(spike_fil_bin_elec, dt*bin_width/1000.)
     
     ## peak freqs
     peak_lag, peak_freq, freq, power=peak_freq_welch(psth_bin, 
@@ -167,17 +178,17 @@ def main(argv=None):
     avg_firing_rate=np.mean(firing_rates)
 
     ## Compute the population burst peaks
-    pop_burst_peak=scipy.signal.argrelmax(butter_int_bin, order=peak_order)[0]
-    pop_burst_peak=pop_burst_peak[butter_int_bin[pop_burst_peak] >
-                                  np.percentile(butter_int_bin,peak_percentile)]
-    ibi_vec=np.diff(pop_burst_peak)*bin_width*dt/1000.0
-    ibi_mean=np.mean(ibi_vec)
-    ibi_cv=np.std(ibi_vec)/ibi_mean
-    ibi_irregularity=irregularity_score(ibi_vec)
-    amplitude_irregularity=irregularity_score(butter_int_bin[pop_burst_peak])
-    amplitude_cv=np.std(butter_int_bin[pop_burst_peak])/\
-      np.mean(butter_int_bin[pop_burst_peak])
-
+    pop_burst_peak,pop_burst_trough,ibi_vec,ibi_mean,ibi_cv, \
+      ibi_irregularity, amplitude_irregularity, amplitude_cv, peak_to_trough = \
+      burst_stats(butter_int_bin,peak_order,peak_percentile,dt*bin_width/1000.)
+    print "ptt: " + str(peak_to_trough)
+    pop_burst_peak_elec,pop_burst_trough_elec,ibi_vec_elec,ibi_mean_elec,\
+      ibi_cv_elec, ibi_irregularity_elec, amplitude_irregularity_elec, \
+      amplitude_cv_elec, peak_to_trough_elec \
+       = burst_stats(butter_int_bin_elec,peak_order,peak_percentile,
+                     dt*bin_width/1000.)
+    print "ptt elec: " + str(peak_to_trough_elec)
+        
     ## Compute event triggered averages
     ## First, using absolute time
     eta=event_trig_avg(pop_burst_peak, spike_fil_bin)
@@ -186,10 +197,6 @@ def main(argv=None):
     eta_norm=event_trig_avg(pop_burst_peak, spike_fil_bin, normalize=True,
                             pts=eta_norm_pts)
     eta_t_norm=np.linspace(-0.5, 0.5, 2*eta_norm_pts)
-
-    ## Load in graph data
-    (vertex_types, vertex_inh, vertex_respir_area, graph_adj, bin_adj,
-     adj_exc, adj_inh)=graph_attributes(graph_fn)
 
     ## Order parameters   
     (ops,op_abs,op_angle,op_mask,
@@ -226,30 +233,34 @@ def main(argv=None):
     scipy.io.savemat(outFn,
                      mdict={'bins': bins,
                             'spike_mat_bin': spike_mat_bin,
-                            # 'spike_fil': spike_fil,
-                            # 'butter_int': butter_int,
                             'spike_fil_bin': spike_fil_bin,
                             'butter_int_bin': butter_int_bin,
+                            'butter_int_bin_elec': butter_int_bin_elec,
                             'psth_bin': psth_bin,
                             'chi': chi,
+                            'chi_elec': chi_elec,
                             'autocorr': autocorr,
                             'peak_lag': peak_lag,
                             'peak_freq': peak_freq,
-                            # 'duty_cycle': duty_cycle,
+                            'pop_burst_peak': pop_burst_peak,
+                            'pop_burst_trough': pop_burst_trough,
+                            'ibi_vec': ibi_vec,
                             'ibi_mean': ibi_mean,
                             'ibi_cv': ibi_cv,
-                            # 'burst_length_mean': burst_length_mean,
-                            # 'burst_length_cv': burst_length_cv,
-                            'ibi_vec': ibi_vec,
                             'ibi_irregularity' : ibi_irregularity,
                             'amplitude_irregularity' : amplitude_irregularity,
                             'amplitude_cv' : amplitude_cv,
-                            # 'burst_lengths': burst_lengths,
-                            # 'burst_start_locs': burst_start_locs,
-                            # 'burst_peak_locs': burst_peak_locs,
-                            # 'burst_peaks': burst_peaks,
-                            # 'bursting': bursting,
-                            # 'bad_bursts': bad_bursts,
+                            'peak_to_trough': peak_to_trough,
+                            'pop_burst_peak_elec': pop_burst_peak_elec,
+                            'pop_burst_trough_elec': pop_burst_trough_elec,
+                            'ibi_vec_elec': ibi_vec_elec,
+                            'ibi_mean_elec': ibi_mean_elec,
+                            'ibi_cv_elec': ibi_cv_elec,
+                            'ibi_irregularity_elec' : ibi_irregularity_elec,
+                            'amplitude_irregularity_elec' : \
+                            amplitude_irregularity_elec,
+                            'amplitude_cv_elec' : amplitude_cv_elec,
+                            'peak_to_trough_elec':peak_to_trough_elec,
                             'eta': eta,
                             'eta_t': eta_t,
                             'eta_norm': eta_norm,
@@ -262,7 +273,6 @@ def main(argv=None):
                             'ops': ops,
                             'op_angle_mean': op_angle_mean,
                             'op_angle_std': op_angle_std,
-                            'pop_burst_peak': pop_burst_peak,
                             'avg_firing_rate': avg_firing_rate,
                             'num_silent': num_silent,
                             'num_expir': num_expir,

@@ -184,6 +184,7 @@ def synchrony_stats(data, dt, maxlags=3000):
     Parameters
     ==========
       data: numneuron x time
+      dt: time spacing
       maxlags: maximal lag for autocorrelation, default=3000 ms
     
     Returns
@@ -275,7 +276,7 @@ def burst_starts(raster):
     '''
     return np.where(np.diff(raster) == 1)[0] + 1
 
-def burst_stats(data, cutoff, dt):
+def burst_stats_old(data, cutoff, dt):
     '''
     Estimate when the population is bursting by comparing filtered
     activity data with a threshold=cutoff*(max(data) - min(data)) + min(data).
@@ -495,3 +496,20 @@ def predict_ops_olm(ops, predictors):
 def irregularity_score(ts):
     return np.mean(np.abs(np.diff(ts))/ts[0:-1])
     
+def burst_stats(signal,peak_order,peak_percentile,dt):
+    pop_burst_peak=scipy.signal.argrelmax(signal, order=peak_order)[0]
+    pop_burst_peak=pop_burst_peak[signal[pop_burst_peak] >
+                                  np.percentile(signal,peak_percentile)]
+    pop_burst_trough=scipy.signal.argrelmin(signal, order=peak_order)[0]
+    pop_burst_trough=pop_burst_trough[signal[pop_burst_trough] <
+                                      np.percentile(signal,100.-peak_percentile)]
+    ibi_vec=np.diff(pop_burst_peak)*dt/1000.0
+    ibi_mean=np.mean(ibi_vec)
+    ibi_cv=np.std(ibi_vec)/ibi_mean
+    ibi_irregularity=irregularity_score(ibi_vec)
+    amplitude_irregularity=irregularity_score(signal[pop_burst_peak])
+    amplitude_cv=np.std(signal[pop_burst_peak])/np.mean(signal[pop_burst_peak])
+    peak_to_trough=(signal[pop_burst_peak].mean() -
+                    signal[pop_burst_trough].mean())/signal.mean()
+    return (pop_burst_peak,pop_burst_trough,ibi_vec,ibi_mean,ibi_cv,
+        ibi_irregularity, amplitude_irregularity, amplitude_cv, peak_to_trough)
