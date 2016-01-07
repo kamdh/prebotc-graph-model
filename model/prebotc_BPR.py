@@ -258,11 +258,11 @@ for (i=0; i<num_vertices; i++) {
     double synVar = y(offset + edgeid);
     if (gSyn < 0.0) {
       // inhibitory
-      I_syn += abs(gSyn) * synVar * (y(j) - vsynI);
+      I_syn += fabs(gSyn) * synVar * (y(j) - vsynI);
     } 
     else {
       // excitatory
-      I_syn += abs(gSyn) * synVar * (y(j) - vsynE);
+      I_syn += fabs(gSyn) * synVar * (y(j) - vsynE);
     }
   }
   if ((int)in_degrees(i) == 0) {

@@ -8,5 +8,5 @@
  "P": 31000, "Ki": 1.0, "Ka": 0.4, "Ve": 400, "Ke": 0.2, "A": 0.005,
  "Kd": 0.4, "sigma": 0.185, "vsynE": 0, "vsynI": -70, 
  "vsyn": 0, "ssyn": -3, "ksyn": 1, "tausyn": 15,
- "I_apsE": "0.2 if (t > 40000 and t < 41000) else 0", 
- "I_apsI": "0.2 if (t > 40000 and t < 41000) else 0"}
+ "I_apsE": 0,
+ "I_apsI": "0.2 if (t > 100000 and t < 120000) else 0"}

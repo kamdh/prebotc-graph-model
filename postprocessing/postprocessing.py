@@ -6,6 +6,7 @@ A library of functions used for postprocessing the preBotC model output.
 
 import numpy as np
 import scipy.signal
+#import scipy.sparse as sp
 from IPython import embed
 
 def chop_transient(data, transient, dt):
@@ -348,7 +349,7 @@ def graph_attributes(graph_fn):
         nx.get_node_attributes(g,'respir_area').values(),
         dtype=np.int)
     graph_adj=nx.adjacency_matrix(g, weight='gsyn')
-    bin_adj=np.matrix(graph_adj > 0, dtype=np.float)
+    bin_adj=(graph_adj > 0).todense().astype(float)
     adj_inh=np.multiply(np.tile(vertex_inh,(g.number_of_nodes(),1)).T,
                         bin_adj)
     adj_exc=np.multiply(np.tile(1-vertex_inh,(g.number_of_nodes(),1)).T,
@@ -430,6 +431,7 @@ def eta_vertex_inputs(eta,bin_adj,vertex_inh):
     inh_input=np.zeros((m,n))
     exc_input=np.zeros((m,n))
     for v in range(m):
+        # neighbors=(bin_adj[:,v] != 0).nonzero()[0] # used for sparse bin_adj
         neighbors=np.array(np.where(bin_adj[:,v])[0]).flatten()
         for u in neighbors:
             if vertex_inh[u]:

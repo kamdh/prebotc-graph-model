@@ -12,11 +12,15 @@ import numpy as np
 import scipy.io
 import matplotlib.pyplot as plt
 import progressbar
+import pandas as pd
 
 #### config here
-projName = "g_sweep_fix"
+projName = "g_sweep_fix_all"
 outFn = os.path.join(os.environ['HOME'], 'work', 'prebotc', 
                       'data', projName, 'post/collected.mat')
+outDfFn = os.path.join(os.environ['HOME'], 'work', 'prebotc', 
+                        'data', projName, 'post/collected_table.csv')
+
 
 ## setup variables
 srcDir = os.path.join(os.environ['HOME'], 'work', 'prebotc', 'src')
@@ -27,6 +31,7 @@ errFn = os.path.join(srcDir, 'pipeline', projName + "_post_err")
 f = open(iputFn, 'r')
 lines = f.readlines()
 splitLines = np.array([ line.split() for line in lines ])
+nstep=len(splitLines)
 fp = open(postFn, 'r')
 postLines = fp.readlines()
 ## casting as numpy array allows slicing
@@ -70,10 +75,15 @@ amplitude_irregularity = np.zeros((numk, numpI, numgE, numgI, numRep),
                                   dtype=np.float)
 ibi_irregularity = np.zeros((numk, numpI, numgE, numgI, numRep),
                             dtype=np.float)
+df=pd.DataFrame(columns=['post_file','k','pI','rep','gE','gI','chi',
+                         'peak_freq','peak_lag', 'op_angle_mean','op_angle_std',
+                         'num_expir','avg_firing_rate','amplitude_irregularity',
+                         'ibi_irregularity'],
+                         index=range(nstep) )
+
 
 print("Looping over all postprocessing output....")
 bar_updates = 100
-nstep=len(splitLines)
 widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()]
 bar = progressbar.ProgressBar(maxval=nstep, widgets=widgets)
 bar.start()
@@ -99,6 +109,21 @@ for i in range(nstep):
         avg_firing_rate[idx] = float(M['avg_firing_rate'])
         amplitude_irregularity[idx] = float(M['amplitude_irregularity'])
         ibi_irregularity[idx] = float(M['ibi_irregularity'])
+        # fill dataframe
+        df.loc[i]=pd.Series( { 'post_file': postFile, 'k': k,
+                               'pI': pI, 'rep': rep, 'gE': gE, 'gI': gI,
+                               'chi': float(chiArray[idx]),
+                               'peak_freq': float(fMax[idx]),
+                               'peak_lag': float(lag[idx]),
+                               'op_angle_mean': float(op_angle_mean[idx]),
+                               'op_angle_std': float(op_angle_std[idx]),
+                               'num_expir': float(num_expir[idx]),
+                               'avg_firing_rate': float(avg_firing_rate[idx]),
+                               'amplitude_irregularity':
+                               float(amplitude_irregularity[idx]),
+                               'ibi_irregularity': float(ibi_irregularity[idx])
+                             }
+                            )
     except (IOError, KeyError):
         # simOutFn = run[1]
         # cmd = "./doPost.py " + simOutFn + " " + postFile + "\n"
@@ -175,3 +200,4 @@ scipy.io.savemat(outFn,
                         'gEs': gEs,
                         'gIs': gIs,
                         'reps': reps})
+df.to_csv(outDfFn)
