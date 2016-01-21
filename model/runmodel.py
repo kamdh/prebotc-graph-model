@@ -119,7 +119,7 @@ def main(argv=None):
     ## Other integration methods
     ## method 1: BDF
     r.set_integrator(
-        'vode', 
+        'vode',
         method='bdf'
         )
     ## method 2: Dormand-Price
@@ -147,7 +147,7 @@ def main(argv=None):
         r.integrate(r.t + dt)
         y = r.y.copy()
         if save_full:
-            save_state[:, i] = y
+            save_state[:, i] = y.flatten()
         elif save_spikes:
             spikers = prebotc.spiking(y, num_vertices, spike_thresh)
             for neur in spikers:
