@@ -13,6 +13,9 @@ import progressbar
 import warnings
 from IPython import embed
 
+'''
+    This class will allow you to run a given network with the desired integration/numerical properties, calls prebotc_BPR.py to get the system of equations used for the model
+'''
 def parse_args(argv):
     # # defaults for original model with seconds as time units
     # dt = 1e-3
@@ -22,8 +25,8 @@ def parse_args(argv):
     tf = 30.0e3 # ms
     # shared defaults
     t0 = 0.0 # ms
-    abs_error = 1e-6
-    rel_error = 1e-4
+    abs_error = 1e-12
+    rel_error = 1e-6
     spike_thresh = -15.0 # mV
     refractory = 6.0 # ms
     parser = argparse.ArgumentParser(prog="runmodel",
@@ -60,6 +63,7 @@ def parse_args(argv):
     parser.add_argument('--ics', default='random', 
                         help='set IC''s, filename or ''%(default)s'' (default)')
     args = parser.parse_args(argv[1:])
+    
     assert not (args.save_spikes and args.save_full), \
         "only one of --save_spikes and --save_full can be set"
     if args.save_spikes and args.dt > 1:
@@ -70,20 +74,33 @@ def parse_args(argv):
         args.refractory, args.ics
 
 def main(argv=None):
+    should_save = True
     if argv is None:
         argv = sys.argv
-    (t0, tf, dt, param_fn, graph_fn, outFn, abs_error, rel_error, save_full, 
-     save_spikes, quiet, spike_thresh, refractory, ic_str) = parse_args(argv)
+    else:
+        should_save = False
+
+
+    (t0, tf, dt, param_fn, graph_fn, outFn, abs_error, rel_error, save_full,
+    save_spikes, quiet, spike_thresh, refractory, ic_str) = parse_args(argv)
+
+
     # compute the number of steps required
     Nstep = np.ceil(tf/dt)
     if not quiet:
         print("Loading parameters, graph, and setting up ICs")
     my_params = prebotc.params(param_fn)
     num_vertices, num_edges, graph_params = prebotc.graph(graph_fn)
+
+    #Checks to see if it neets to load a set of initial conditions or generate random ones
     if ic_str == 'random':
         if not quiet:
             print('Setting random ICs')
         y = prebotc.ics(num_vertices, num_edges)
+    elif ic_str == 'testing_ic':
+        if not quiet:
+            print('Setting random ICs')
+        y = prebotc.ics(num_vertices, num_edges, random = False)
     else:
         if not quiet:
             print('Loading ICs from ' + ic_str)
@@ -112,28 +129,20 @@ def main(argv=None):
     else:
         # timeseries of spikes
         save_state = np.zeros((num_vertices, Nstep+1)) 
+
+    #Creates and sets integrator. Using VODE and backward differentiation formulas (BDF) as the method
+    #This is done since we are using a stiff DFQ, the default method is Adams (implicit, non-stiff)
     r = scipy.integrate.ode(f)
     r.set_initial_value(y, t0)
-    ## Default integration method is VODE with method 'adams' (implicit)
-    ##
-    ## Other integration methods
-    ## method 1: BDF
+    
     r.set_integrator(
         'vode',
-        method='bdf'
-        )
-    ## method 2: Dormand-Price
-    # r.set_integrator(
-    #     'dopri5', 
-    #     rtol = rel_error,
-    #     atol = abs_error
-    #     )
-    ## method 3: VODE
-    # r.set_integrator('vode',
-    #                  rtol = rel_error,
-    #                  atol = abs_error)
-    ## method 4: LSODA
-    #r.set_integrator('lsoda')
+        method='bdf',
+        atol = abs_error,
+        rtol = rel_error
+    )
+
+    #Visual representation of running progress
     if not quiet:
         print("Running integration loop....")
         t = time.time()
@@ -142,6 +151,7 @@ def main(argv=None):
         bar = progressbar.ProgressBar(maxval=bar_updates, widgets=widgets)
         bar.start()
         j = 0
+
     i = 0
     while r.successful() and r.t < tf:
         r.integrate(r.t + dt)
@@ -162,10 +172,12 @@ def main(argv=None):
             if ( i % np.floor(Nstep/bar_updates) ) == 0:
                 bar.update(j)
                 j += 1
+
     if not save_spikes:
         save_state = save_state[:, 0:(i-1)]
     else:
         save_state.resize( (num_vertices, i-1) )
+
     if not quiet:
         bar.finish()
         elapsed = time.time() - t
@@ -173,27 +185,34 @@ def main(argv=None):
         # Time saving
         t = time.time()
         print("Saving output....")
+
     if save_full:
         save_str = 'full'
     elif save_spikes:
         save_str = 'spikes'
     else:
         save_str = 'V'
-    # save output
-    savemat(outFn, 
-            mdict={'Y': save_state,
-                   'dt': dt,
-                   't0': t0,
-                   'tf': tf,
-                   'paramFn': os.path.abspath(param_fn),
-                   'graphFn': os.path.abspath(graph_fn),
-                   'absErr': abs_error,
-                   'relErr': rel_error,
-                   'saveStr': save_str,
-                   'finalState': y,
-                   'icStr': ic_str
-               },
-            oned_as = 'column', do_compression=True)
+
+    mdict={ 'Y': save_state,
+            'dt': dt,
+            't0': t0,
+            'tf': tf,
+            'paramFn': os.path.abspath(param_fn),
+            'graphFn': os.path.abspath(graph_fn),
+            'absErr': abs_error,
+            'relErr': rel_error,
+            'saveStr': save_str,
+            'finalState': y,
+            'icStr': ic_str
+          }
+
+    # save output in .mat files with variable names given below
+    #Checks to see if it is being run for testing so, if so it will not save to avoid loading the file again
+    if should_save:
+        savemat(outFn, mdict,oned_as = 'column', do_compression=True)
+    else:
+        return mdict
+
     if not quiet:
         elapsed = time.time() - t
         print("Done!\nSave time: %1.2fs" % elapsed)
