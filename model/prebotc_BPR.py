@@ -13,6 +13,9 @@ from scipy.weave import converters
 import math  # allow functions in math module
 from scipy.io import loadmat
 
+'''
+    This class sets up the right hand side of the equations for the Butera, Park, Rubin model so that it can integrated. There is inline C for faster computation.
+'''
 # constants
 num_eqns_per_vertex = 5
 num_eqns_per_edge = 1
@@ -106,6 +109,7 @@ def ics(num_vertices, num_edges, random=True):
             j = range(offset + i*num_eqns_per_edge,
                       offset + (i+1)*num_eqns_per_edge)
             y[j] = (0.0025 - 0) * np.random.random_sample() + 0
+
     else:
         for i in range(num_vertices):
             # vertex data in 0:num_eqns_per_vertex*num_vertices-1
