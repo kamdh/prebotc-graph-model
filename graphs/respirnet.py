@@ -3,6 +3,11 @@ import numpy as np
 import random
 import itertools
 
+'''
+    This class will generate different desired networks based on the desired architecture. Allows for different 
+    graph architectures to be implemented
+'''
+
 def assign_type(pTypes):
     numTypes = len(pTypes)
     # node is type 0, 1, 2, 3 wp given in pTypes
@@ -27,6 +32,20 @@ def assign_gsyn(graph, e, gE, gI):
         gsyn = gE
     return gsyn
 
+'''
+    This function generates a single area network
+    
+    Inputs:
+        n - The number of desired nodes in the area
+        p - The probability of edge creation 
+        pTypes - The probability distribution of neuron types
+        pI - The probability of a inhibitory node being created
+        gE - The conductance of exictatory synapses 
+        gI - The conductance of inhibitory synapses
+        
+    Return:
+        graph - Networkx graph with desired architecture
+'''
 def er_prebot(n, p, pTypes, pI, gE, gI):
     assert isinstance(n, int), 'n should be integer'
     assert 0 <= p and p <= 1, 'p out of range'
@@ -58,30 +77,37 @@ def complete_prebot(n, pTypes, pI, gE, gI):
                             for x in graph.edges()})
     return graph
 
-def er_prebot_bot(n0, n1, p_mat_I, p_mat_E, pTypes, pI, gE, gI):
-    '''
+'''
     Generate a model for preBot and Bot coupled respiratory groups.
     This is a signed (E-I) version of a 2-group stochastic block model.
-
+    
     Parameters
     ==========
     n0: int
-        Number of nodes in 1st complex (preBot)
+    Number of nodes in 1st complex (preBot)
     n1: int
-        Number of nodes in 2nd complex (Bot)
+    Number of nodes in 2nd complex (Bot)
     p_mat_I: 2x2 ndarray
-        Probability of inhibitory projections
+    Probability of inhibitory projections
     p_mat_E: 2x2 ndarray
-        Probability of excitatory projections
+    Probability of excitatory projections
     pTypes: float array
-        Probability of each node type 0, 1, ..., numtypes
+    Probability of each node type 0, 1, ..., numtypes
     pI: float
-        Probability a node is inhibitory
+    Probability a node is inhibitory
     gE: float
-        Max conductance of excitatory connections
+    Max conductance of excitatory connections
     gI: float
-        Max conductance of inhibitory connections
-    '''
+    Max conductance of inhibitory connections
+    
+    Return
+    ======
+    
+    graph - Networkx graph with desired architecture
+'''
+
+def er_prebot_bot(n0, n1, p_mat_I, p_mat_E, pTypes, pI, gE, gI):
+    
     assert isinstance(n0, int), 'n0 should be integer'
     assert isinstance(n1, int), 'n1 should be integer'
     assert p_mat_I.ndim == 2 and \
@@ -97,8 +123,6 @@ def er_prebot_bot(n0, n1, p_mat_I, p_mat_E, pTypes, pI, gE, gI):
     assert isinstance(gE, float), 'gE should be float'
     assert isinstance(gI, float), 'gI should be float'
 
-    print p_mat_E
-    print p_mat_I
     # setup nodes
     graph = nx.empty_graph(n0+n1)
     graph = nx.DiGraph(graph)
