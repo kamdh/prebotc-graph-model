@@ -123,7 +123,7 @@ if docombined
             tmp = ibi_irregularity(:,:,gEidx, gIidx);
             tmp(~chi_mask) = nan;
             myPcolor(X,Y,tmp);
-            titlestr=sprintf(['IBI irregularity\ng_E = %1.1f, ' ...
+            titlestr=sprintf(['Period irregularity\ng_E = %1.1f, ' ...
                               'g_I = %1.1f'],gE,gI);
             title(titlestr, 'fontsize', fontsz)
             xlabel(x_axis_label, 'fontsize', fontsz)
