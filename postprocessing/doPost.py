@@ -179,11 +179,13 @@ def main(argv=None):
 
     ## Compute the population burst peaks
     pop_burst_peak,pop_burst_trough,ibi_vec,ibi_mean,ibi_cv, \
-      ibi_irregularity, amplitude_irregularity, amplitude_cv, peak_to_trough = \
+      ibi_irregularity, amplitude_mean \
+      amplitude_irregularity, amplitude_cv, peak_to_trough = \
       burst_stats(butter_int_bin,peak_order,peak_percentile,dt*bin_width/1000.)
     print "ptt: " + str(peak_to_trough)
     pop_burst_peak_elec,pop_burst_trough_elec,ibi_vec_elec,ibi_mean_elec,\
-      ibi_cv_elec, ibi_irregularity_elec, amplitude_irregularity_elec, \
+      ibi_cv_elec, ibi_irregularity_elec, \
+      amplitude_mean_elec, amplitude_irregularity_elec, \
       amplitude_cv_elec, peak_to_trough_elec \
        = burst_stats(butter_int_bin_elec,peak_order,peak_percentile,
                      dt*bin_width/1000.)
@@ -248,6 +250,7 @@ def main(argv=None):
                             'ibi_mean': ibi_mean,
                             'ibi_cv': ibi_cv,
                             'ibi_irregularity' : ibi_irregularity,
+                            'amplitude_mean' : amplitude_mean,
                             'amplitude_irregularity' : amplitude_irregularity,
                             'amplitude_cv' : amplitude_cv,
                             'peak_to_trough': peak_to_trough,
@@ -257,6 +260,7 @@ def main(argv=None):
                             'ibi_mean_elec': ibi_mean_elec,
                             'ibi_cv_elec': ibi_cv_elec,
                             'ibi_irregularity_elec' : ibi_irregularity_elec,
+                            'amplitude_mean_elec' : amplitude_mean_elec,
                             'amplitude_irregularity_elec' : \
                             amplitude_irregularity_elec,
                             'amplitude_cv_elec' : amplitude_cv_elec,

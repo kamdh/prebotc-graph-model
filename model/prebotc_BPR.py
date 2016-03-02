@@ -45,13 +45,18 @@ def graph(graphFn):
     #g.reindex_edges()
     num_vertices = g.number_of_nodes()
     num_edges = g.number_of_edges()
+    def get_sorted_node_attributes(attr):
+        attr_dict=nx.get_node_attributes(g, attr)
+        attr_dict = dict((int(key), val) for key, val in attr_dict.iteritems())
+        if attr_dict:
+            attr_list=[attr_dict[v] for v in range(num_vertices)]
+            return np.array(attr_list)
+        else:
+            return np.array([])
     # store vertex types
-    vertex_types = np.array(nx.get_node_attributes(g, 'type').values(),
-                            dtype=np.int)
-    vertex_inh = np.array(nx.get_node_attributes(g, 'inh').values(),
-                          dtype=np.int)
-    vertex_respir_area = np.array(
-        nx.get_node_attributes(g, 'respir_area').values(), dtype=np.int)
+    vertex_types=get_sorted_node_attributes('type').astype(int)
+    vertex_inh=get_sorted_node_attributes('inh').astype(int)
+    vertex_respir_area=get_sorted_node_attributes('respir_area').astype(int)
     # construct an edge list
     edge_list = np.zeros((num_edges, 3))
     # also a lookup table for in-edges
@@ -70,14 +75,9 @@ def graph(graphFn):
     for e in g.edges():
         source_index = int(e[0])
         target_index = int(e[1])
-        is_inh = vertex_inh[ source_index ]
-        if is_inh == 1:
-            inh_mult = -1
-        else:
-            inh_mult = 1
         edge_list[i,...] = [ source_index, 
                              target_index,
-                             inh_mult * abs(gsyn_props[e]) ]
+                             abs(gsyn_props[e]) ]
         in_edges[ target_index, in_edge_ct[target_index] ] = i
         # increment indices
         in_edge_ct[ target_index ] += 1
@@ -259,14 +259,15 @@ for (i=0; i<num_vertices; i++) {
   for (k=0; k < (int)in_degrees(i); k++) {
     int edgeid = (int) in_edges(i,k);
     double gSyn = edge_list(edgeid, 2);
+    int pre_neuron = (int) edge_list(edgeid, 0);
     double synVar = y(offset + edgeid);
-    if (gSyn < 0.0) {
+    if ( (int)vertex_inh(pre_neuron) ) {
       // inhibitory
-      I_syn += fabs(gSyn) * synVar * (y(j) - vsynI);
+      I_syn += gSyn * synVar * (y(j) - vsynI);
     } 
     else {
       // excitatory
-      I_syn += fabs(gSyn) * synVar * (y(j) - vsynE);
+      I_syn += gSyn * synVar * (y(j) - vsynE);
     }
   }
   if ((int)in_degrees(i) == 0) {
@@ -286,11 +287,9 @@ for (i=0; i<num_vertices; i++) {
  }
 // edge variables
 for (i=0; i<num_edges; i++) {
-  double v_source, v_target, msyninf;
+  double v_source, msyninf;
   int sourceid = (int) edge_list(i, 0);
-  double gsyn = edge_list(i, 2);
   v_source = y(sourceid * num_eqns_per_vertex);
-  //v_target = edge_list(i, 1);
   j = offset + i;
   msyninf = 1/(1 + exp((v_source - vsyn)/ssyn));
   dydt(j) = ((1 - y(j)) * msyninf - ksyn * y(j)) / tausyn;

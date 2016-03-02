@@ -509,9 +509,11 @@ def burst_stats(signal,peak_order,peak_percentile,dt):
     ibi_mean=np.mean(ibi_vec)
     ibi_cv=np.std(ibi_vec)/ibi_mean
     ibi_irregularity=irregularity_score(ibi_vec)
+    amplitude_mean=np.mean(signal[pop_burst_peak])
     amplitude_irregularity=irregularity_score(signal[pop_burst_peak])
     amplitude_cv=np.std(signal[pop_burst_peak])/np.mean(signal[pop_burst_peak])
     peak_to_trough=(signal[pop_burst_peak].mean() -
                     signal[pop_burst_trough].mean())/signal.mean()
     return (pop_burst_peak,pop_burst_trough,ibi_vec,ibi_mean,ibi_cv,
-        ibi_irregularity, amplitude_irregularity, amplitude_cv, peak_to_trough)
+            ibi_irregularity, amplitude_mean,amplitude_irregularity,
+            amplitude_cv, peak_to_trough)

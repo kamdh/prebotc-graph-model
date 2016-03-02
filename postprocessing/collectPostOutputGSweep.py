@@ -75,10 +75,12 @@ amplitude_irregularity = np.zeros((numk, numpI, numgE, numgI, numRep),
                                   dtype=np.float)
 ibi_irregularity = np.zeros((numk, numpI, numgE, numgI, numRep),
                             dtype=np.float)
+ibi_mean = np.zeros((numk, numpI, numgE, numgI, numRep),
+                            dtype=np.float)
 df=pd.DataFrame(columns=['post_file','k','pI','rep','gE','gI','chi',
                          'peak_freq','peak_lag', 'op_angle_mean','op_angle_std',
                          'num_expir','avg_firing_rate','amplitude_irregularity',
-                         'ibi_irregularity'],
+                         'ibi_irregularity','ibi_mean'],
                          index=range(nstep) )
 
 
@@ -109,6 +111,7 @@ for i in range(nstep):
         avg_firing_rate[idx] = float(M['avg_firing_rate'])
         amplitude_irregularity[idx] = float(M['amplitude_irregularity'])
         ibi_irregularity[idx] = float(M['ibi_irregularity'])
+        ibi_mean[idx] = float(M['ibi_mean'])
         # fill dataframe
         df.loc[i]=pd.Series( { 'post_file': postFile, 'k': k,
                                'pI': pI, 'rep': rep, 'gE': gE, 'gI': gI,
@@ -121,7 +124,8 @@ for i in range(nstep):
                                'avg_firing_rate': float(avg_firing_rate[idx]),
                                'amplitude_irregularity':
                                float(amplitude_irregularity[idx]),
-                               'ibi_irregularity': float(ibi_irregularity[idx])
+                               'ibi_irregularity': float(ibi_irregularity[idx]),
+                               'ibi_mean': float(ibi_mean[idx])
                              }
                             )
     except (IOError, KeyError):
@@ -153,6 +157,7 @@ num_expir_mean=np.mean(num_expir,axis=4)
 avg_firing_rate_mean=np.mean(avg_firing_rate,axis=4)
 amplitude_irregularity_mean=np.mean(amplitude_irregularity,axis=4)
 ibi_irregularity_mean=np.mean(ibi_irregularity,axis=4)
+ibi_mean_mean=np.mean(ibi_irregularity,axis=4)
 # standard deviations over reps
 chiArray_std=np.std(chiArray,axis=4)
 fMax_std=np.std(fMax, axis=4)
@@ -186,6 +191,7 @@ scipy.io.savemat(outFn,
                         'avg_firing_rate': avg_firing_rate_mean,
                         'amplitude_irregularity':amplitude_irregularity_mean,
                         'ibi_irregularity':ibi_irregularity_mean,
+                        'ibi_mean_mean' : ibi_mean_mean,
                         'chiArray_std':chiArray_std,
                         'fMax_std': fMax_std,
                         'lag_std': lag_std,

@@ -13,8 +13,8 @@ num_neurons=300;
 expir_threshold=15;
 fontsz=24;
 
-dopartics = 1;
-docombined = 0;
+dopartics = 0;
+docombined = 1;
 do_k_vs_pI=0;
 do_gE_vs_gI=1;
 partics = {'er_n300_k6.0_deg_pI0.20_rep1',...
@@ -47,8 +47,8 @@ partics = {'er_n300_k6.0_deg_pI0.20_rep1',...
 %            'er_n300_k6.0_deg_pI0.90_rep1', ...
 %            'er_n300_k6.0_deg_pI1.00_rep1' 
 %           };
-%projName = 'g_sweep_fix';
-projName = 'random_extend';
+projName = 'g_sweep_fix';
+%projName = 'random_extend';
 opThresh = 0.2;
 
 %% start processing
@@ -120,6 +120,21 @@ if docombined
             print('-depsc', plt)
 
             figure
+            tmp = amplitude_irregularity_std(:,:,gEidx, gIidx);
+            tmp(~chi_mask) = nan;
+            myPcolor(X,Y, tmp);
+            titlestr=sprintf(['Amplitude irregularity\ng_E = %1.1f, ' ...
+                              'g_I = %1.1f'],gE,gI);
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label, 'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
+            %axis([0,1])
+            % colorbar
+            %colormap('gray')
+            plt = [plotDir, '/', pltGStr, '_amp_irreg_std.eps']
+            print('-depsc', plt)
+
+            figure
             tmp = ibi_irregularity(:,:,gEidx, gIidx);
             tmp(~chi_mask) = nan;
             myPcolor(X,Y,tmp);
@@ -132,6 +147,21 @@ if docombined
             % colorbar
             %colormap('gray')
             plt = [plotDir, '/', pltGStr, '_ibi_irreg.eps']
+            print('-depsc', plt)
+
+            figure
+            tmp = ibi_irregularity_std(:,:,gEidx, gIidx);
+            tmp(~chi_mask) = nan;
+            myPcolor(X,Y,tmp);
+            titlestr=sprintf(['SD of period irregularity\ng_E = %1.1f, ' ...
+                              'g_I = %1.1f'],gE,gI);
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label, 'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
+            %axis([0,1])
+            % colorbar
+            %colormap('gray')
+            plt = [plotDir, '/', pltGStr, '_ibi_irreg_std.eps']
             print('-depsc', plt)
             
             % figure
@@ -159,8 +189,22 @@ if docombined
             print('-depsc', plt)
 
             figure
+            myPcolor(X,Y, fMax_std(:,:,gEidx, gIidx))
+            titlestr=sprintf(['SD of peak frequency (Hz)\n'...
+                              'g_E = %1.1f, g_I = %1.1f'],...
+                             gE,gI);
+            title(titlestr, 'fontsize', fontsz)
+            title('peak frequency (1/s)','fontsize', fontsz)
+            xlabel(x_axis_label, 'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
+            % colorbar
+            %colormap('gray')
+            plt = [plotDir, '/', pltGStr, '_peak_freq_std.eps']
+            print('-depsc', plt)
+
+            figure
             myPcolor(X,Y, lag(:,:,gEidx, gIidx))
-            titlestr=sprintf('Period (s)\ng_E = %1.1f, g_I = %1.1f',...
+            titlestr=sprintf('Peak period (s)\ng_E = %1.1f, g_I = %1.1f',...
                              gE,gI);
             title(titlestr, 'fontsize', fontsz)
             xlabel(x_axis_label, 'fontsize', fontsz)
@@ -168,6 +212,19 @@ if docombined
             % colorbar
             %colormap('gray')
             plt = [plotDir, '/', pltGStr, '_lag.eps']
+            print('-depsc', plt)
+
+            figure
+            myPcolor(X,Y, lag_std(:,:,gEidx, gIidx))
+            titlestr=sprintf(['SD of peak period (s)\n'...
+                              'g_E = %1.1f, g_I = %1.1f'],...
+                             gE,gI);
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label, 'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
+            % colorbar
+            %colormap('gray')
+            plt = [plotDir, '/', pltGStr, '_lag_std.eps']
             print('-depsc', plt)
 
             % figure
@@ -196,17 +253,17 @@ if docombined
             % plt = [plotDir, '/', pltGStr, '_mean_IBI.eps']
             % print('-depsc', plt)
 
-            % figure
-            % myPcolor(X,Y, cvIBI(:,:,gEidx, gIidx))
-            % titlestr=sprintf('CV of IBIs\ng_E = %1.1f, g_I = %1.1f',...
-            %                  gE,gI);
-            % title(titlestr, 'fontsize', fontsz)
-            % xlabel(x_axis_label,'fontsize', fontsz)
-            % ylabel(y_axis_label,'fontsize', fontsz)
-            % % colorbar
-            % %colormap('gray')
-            % plt = [plotDir, '/', pltGStr, '_cv_IBIs.eps']
-            % print('-depsc', plt)
+            figure
+            myPcolor(X,Y, cvIBI(:,:,gEidx, gIidx))
+            titlestr=sprintf('CV of IBIs\ng_E = %1.1f, g_I = %1.1f',...
+                             gE,gI);
+            title(titlestr, 'fontsize', fontsz)
+            xlabel(x_axis_label,'fontsize', fontsz)
+            ylabel(y_axis_label,'fontsize', fontsz)
+            % colorbar
+            %colormap('gray')
+            plt = [plotDir, '/', pltGStr, '_cv_IBIs.eps']
+            print('-depsc', plt)
 
             % figure
             % myPcolor(X,Y, cvB(:,:,gEidx, gIidx))
@@ -341,10 +398,26 @@ if docombined
                 print('-depsc', plt)
 
                 figure
+                tmp = squeeze(amplitude_irregularity_std(k_idx, pI_idx,:,:));
+                tmp(~chi_mask) = nan;
+                myPcolor(Xg,Yg,tmp); % 'clim', [0,1]);
+                titlestr=sprintf(['SD of amplitude irregularity\n'...
+                                  'k_{avg} = %1.1f, '...
+                                  'p_I = %1.1f'],k,pI);
+                title(titlestr, 'fontsize', fontsz)
+                xlabel(x_axis_label, 'fontsize', fontsz)
+                ylabel(y_axis_label,'fontsize', fontsz)
+                %axis([0,1])
+                % colorbar
+                %colormap('gray')
+                plt = [plotDir, '/', plt_str, '_amp_irreg_std.eps']
+                print('-depsc', plt)
+
+                figure
                 tmp = squeeze(ibi_irregularity(k_idx,pI_idx,:,:));
                 tmp(~chi_mask) = nan;
                 myPcolor(Xg,Yg, tmp); % 'clim', [0,1]);
-                titlestr=sprintf(['IBI irregularity\nk_{avg} = %1.1f, ' ...
+                titlestr=sprintf(['Period irregularity\nk_{avg} = %1.1f, ' ...
                                   'p_I = %1.1f'],k,pI);
                 title(titlestr, 'fontsize', fontsz)
                 xlabel(x_axis_label, 'fontsize', fontsz)
@@ -354,9 +427,82 @@ if docombined
                 %colormap('gray')
                 plt = [plotDir, '/', plt_str, '_ibi_irreg.eps']
                 print('-depsc', plt)
+
+                figure
+                tmp = squeeze(ibi_irregularity_std(k_idx,pI_idx,:,:));
+                tmp(~chi_mask) = nan;
+                myPcolor(Xg,Yg, tmp); % 'clim', [0,1]);
+                titlestr=sprintf(['SD of period irregularity\n'...
+                                  'k_{avg} = %1.1f, ' ...
+                                  'p_I = %1.1f'],k,pI);
+                title(titlestr, 'fontsize', fontsz)
+                xlabel(x_axis_label, 'fontsize', fontsz)
+                ylabel(y_axis_label,'fontsize', fontsz)
+                %axis([0,1])
+                % colorbar
+                %colormap('gray')
+                plt = [plotDir, '/', plt_str, '_ibi_irreg_std.eps']
+                print('-depsc', plt)
                 close all
             end
         end
+
+        figure
+        myPcolor(Xg,Yg, squeeze(fMax(k_idx, pI_idx, :,:)))
+        titlestr=sprintf(['Peak frequency (Hz)\n'...
+                          'k_{avg} = %1.1f, p_I ' ...
+                          '= %1.1f'], k,pI);
+        title(titlestr, 'fontsize', fontsz)
+        xlabel(x_axis_label, 'fontsize', fontsz)
+        ylabel(y_axis_label,'fontsize', fontsz)
+        %axis([0,1])
+        % colorbar
+        %colormap('gray')
+        plt = [plotDir, '/', plt_str, '_peak_freq.eps']
+        print('-depsc', plt)
+        
+        figure
+        myPcolor(Xg,Yg, squeeze(fMax_std(k_idx, pI_idx, :,:)))
+        titlestr=sprintf(['SD of peak frequency (Hz)\n'...
+                          'k_{avg} = %1.1f, p_I ' ...
+                          '= %1.1f'], k,pI);
+        title(titlestr, 'fontsize', fontsz)
+        xlabel(x_axis_label, 'fontsize', fontsz)
+        ylabel(y_axis_label,'fontsize', fontsz)
+        %axis([0,1])
+        % colorbar
+        %colormap('gray')
+        plt = [plotDir, '/', plt_str, '_peak_freq_std.eps']
+        print('-depsc', plt)
+        
+        figure
+        myPcolor(Xg,Yg, squeeze(lag(k_idx, pI_idx, :,:)))
+        titlestr=sprintf(['Peak period (s)\n'...
+                          'k_{avg} = %1.1f, p_I ' ...
+                          '= %1.1f'], k,pI);
+        title(titlestr, 'fontsize', fontsz)
+        xlabel(x_axis_label, 'fontsize', fontsz)
+        ylabel(y_axis_label,'fontsize', fontsz)
+        %axis([0,1])
+        % colorbar
+        %colormap('gray')
+        plt = [plotDir, '/', plt_str, '_lag.eps']
+        print('-depsc', plt)
+        
+        figure
+        myPcolor(Xg,Yg, squeeze(lag_std(k_idx, pI_idx, :,:)))
+        titlestr=sprintf(['SD of peak period (s)\n'...
+                          'k_{avg} = %1.1f, p_I ' ...
+                          '= %1.1f'], k,pI);
+        title(titlestr, 'fontsize', fontsz)
+        xlabel(x_axis_label, 'fontsize', fontsz)
+        ylabel(y_axis_label,'fontsize', fontsz)
+        %axis([0,1])
+        % colorbar
+        %colormap('gray')
+        plt = [plotDir, '/', plt_str, '_lag_std.eps']
+        print('-depsc', plt)        
+        
     end
     end
 end
