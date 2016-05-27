@@ -161,7 +161,12 @@ def bin_subsamp(data, bins):
     =======
       binned_data: a new matrix (num_neuron x num_bins)
     '''
-    binned_data=data[:,np.array(bins, dtype=np.int)]
+    if data.ndim==1:
+        binned_data=data[np.array(bins, dtype=np.int)]
+    elif data.ndim==2:
+        binned_data=data[:,np.array(bins, dtype=np.int)]
+    else:
+        raise Exception("unexpected input data dimension")
     # num_neurons= np.shape(data)[0]
     # num_times=np.shape(data)[1]
     # stride=int(np.ceil(bin_width / dt))
@@ -505,7 +510,7 @@ def burst_stats(signal,peak_order,peak_percentile,dt):
     pop_burst_trough=scipy.signal.argrelmin(signal, order=peak_order)[0]
     pop_burst_trough=pop_burst_trough[signal[pop_burst_trough] <
                                       np.percentile(signal,100.-peak_percentile)]
-    ibi_vec=np.diff(pop_burst_peak)*dt/1000.0
+    ibi_vec=np.diff(pop_burst_peak)*dt
     ibi_mean=np.mean(ibi_vec)
     ibi_cv=np.std(ibi_vec)/ibi_mean
     ibi_irregularity=irregularity_score(ibi_vec)

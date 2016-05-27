@@ -203,6 +203,10 @@ def rhs(t, y,
     # evaluate time-varying input currents
     I_apsE_t = I_apsE(t)
     I_apsI_t = I_apsI(t)
+    # gtonic_E = params['gtonic_E']
+    # gtonic_I = params['gtonic_I']
+    # gmult_E = params['gmult_E']
+    # gmult_I = params['gmult_I']
 
     code = """
 int num_vertices = Nvertex_types[0];
@@ -215,6 +219,7 @@ double gl_array[]   = {gl_CS, gl_CI, gl_TS, gl_Q};
 for (i=0; i<num_vertices; i++) {
   double minf, ninf, minfp, hinf, taun, tauh, I_na, I_k, I_nap, I_l,
     caninf, I_can, J_ER_in, J_ER_out, Ce, I_syn, gcan, gl, I_aps;
+    // I_tonic_E, I_tonic_I;
   int type_idx;
   int is_inh;
   j = i*num_eqns_per_vertex; // index of first (V) variable
@@ -245,6 +250,8 @@ for (i=0; i<num_vertices; i++) {
   I_k   = gk * pow(y(j+1), 4) * (y(j) - vk);
   I_nap = gnap * minfp * y(j+2) * (y(j) - vna);
   I_l   = gl * (y(j) - vleaks);
+  // I_tonic_E = gmult_E * gtonic_E * (y(j) - vsynE);
+  // I_tonic_I = gmult_I * gtonic_I * (y(j) - vsynI);
   //// CaN current
   caninf = 1/(1+pow(Kcan/y(j+3), ncan));
   I_can = gcan * caninf * (y(j) - vna);
@@ -264,10 +271,12 @@ for (i=0; i<num_vertices; i++) {
     if ( (int)vertex_inh(pre_neuron) ) {
       // inhibitory
       I_syn += gSyn * synVar * (y(j) - vsynI);
+      // I_syn += gmult_I * gSyn * synVar * (y(j) - vsynI);
     } 
     else {
       // excitatory
       I_syn += gSyn * synVar * (y(j) - vsynE);
+      // I_syn += gmult_E * gSyn * synVar * (y(j) - vsynE);
     }
   }
   if ((int)in_degrees(i) == 0) {
@@ -276,6 +285,8 @@ for (i=0; i<num_vertices; i++) {
   //// set the derivatives
   // v'
   dydt(j) = -(I_k + I_na + I_nap + I_l - I_aps + I_can + I_syn) / Cms;
+  // dydt(j) = -(I_k + I_na + I_nap + I_l - I_aps + I_can + I_syn +
+  //            I_tonic_E + I_tonic_I) / Cms;
   // n'
   dydt(j+1) = (ninf - y(j+1))/taun;
   // h'
@@ -306,6 +317,7 @@ for (i=0; i<num_edges; i++) {
                   'gcan_CS', 'gcan_CI', 'gcan_TS', 'gcan_Q', 'I', 'Ct', 'fi',
                   'LL', 'P', 'Ki', 'Ka', 'Ve', 'Ke', 
                   'A', 'Kd', 'sigma', 'ksyn', 'num_eqns_per_vertex', 'dydt'],
+                 # 'gtonic_E','gtonic_I','gmult_E','gmult_I'],
                  verbose = 1,
                  type_converters = converters.blitz, 
                  compiler='gcc',

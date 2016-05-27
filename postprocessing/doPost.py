@@ -25,7 +25,7 @@ def parse_args(argv):
     butter_low=-np.inf # Hz
     bin_width=50 # ms
     cutoff=0.5
-    peak_order=12
+    peak_spacing=1.0 # s
     eta_norm_pts=8
     op_abs_thresh=0.2
     silent_firing_rate=0.1 # Hz
@@ -65,10 +65,10 @@ def parse_args(argv):
     parser.add_argument('--cut', '-c', 
                         help='burst cutoff parameter (default: %(default)s)',
                         type=float, default=cutoff)
-    parser.add_argument('--peak_order', 
+    parser.add_argument('--peak_spacing', 
                         help='maximum order for defining peak number of bins'+\
-                        ', bin count (default: %(default)s)',
-                        type=int, default=peak_order)
+                        ', seconds (default: %(default)s)',
+                        type=float, default=peak_spacing)
     parser.add_argument('--eta_norm_pts',
                         help='half the number of points in [-.5, .5] onto '+\
                         'which to interpolate (default: %(default)s)',
@@ -89,7 +89,7 @@ def parse_args(argv):
     args=parser.parse_args(argv[1:])
     return (args.sim, args.output, args.transient, args.sec, args.thresh,
             args.fsig, args.butter_low, args.butter_high, args.bin_width,
-            args.cut, args.volt, args.peak_order, args.peak_percentile,
+            args.cut, args.volt, args.peak_spacing, args.peak_percentile,
             args.eta_norm_pts,
             args.op_abs_thresh, args.silent_firing_rate)
     
@@ -103,10 +103,11 @@ def main(argv=None):
         (simFn, outFn, trans, sec_flag,
          spike_thresh, f_sigma, butter_low,
          butter_high, bin_width, cutoff, are_volts, 
-         peak_order, peak_percentile, eta_norm_pts, op_abs_thresh,
+         peak_spacing, peak_percentile, eta_norm_pts, op_abs_thresh,
          silent_firing_rate)=parse_args(argv)
 
     butter_freq=np.array([butter_low, butter_high])
+    peak_order = int(np.round(peak_spacing / bin_width * 1e3))
 
     if sec_flag:
         scalet=1e3
@@ -179,7 +180,7 @@ def main(argv=None):
 
     ## Compute the population burst peaks
     pop_burst_peak,pop_burst_trough,ibi_vec,ibi_mean,ibi_cv, \
-      ibi_irregularity, amplitude_mean \
+      ibi_irregularity, amplitude_mean, \
       amplitude_irregularity, amplitude_cv, peak_to_trough = \
       burst_stats(butter_int_bin,peak_order,peak_percentile,dt*bin_width/1000.)
     print "ptt: " + str(peak_to_trough)
