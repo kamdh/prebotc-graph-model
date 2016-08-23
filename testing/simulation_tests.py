@@ -21,6 +21,8 @@ class TestSimulations(unittest.TestCase):
             runmodel.py: output
             doPost.py: sim,output
         This is because we are just passing the arguments in through the main function instead of them being saved
+      sim_param_list: String of parameters seperated by a space 
+      post_param_list: String of parameters seperated by a space
     '''
     def __init__(self,testname,sim_param_list, abs_tol, rel_tol, post_param_list):
         super(TestSimulations,self).__init__(testname)
@@ -50,12 +52,12 @@ class TestSimulations(unittest.TestCase):
         post_data_def = doPost.run(def_tol_sim,trans,sec_flag,spike_thresh,f_sigma,butter_low,butter_high,bin_width,cutoff,are_volts)
         post_data_new = doPost.run(def_tol_sim,trans,sec_flag,spike_thresh,f_sigma,butter_low,butter_high,bin_width,cutoff,are_volts)
 
-        def_lag = post_data_def['phase_lag']
-        new_lag = post_data_new['phase_lag']
+        def_lag = post_data_def['mean_phi']
+        new_lag = post_data_new['mean_phi']
         lag_diff = abs(def_lag - new_lag) / def_lag
         self.assertTrue(lag_diff < .1)
-        def_pop_corr = post_data_def['pop_correlation']
-        new_pop_corr = post_data_new['pop_correlation']
+        def_pop_corr = post_data_def['chi1']
+        new_pop_corr = post_data_new['chi1']
         pop_corr_diff = abs(def_pop_corr-new_pop_corr) / def_pop_corr
         self.assertTrue(pop_corr_diff < .1)
 
