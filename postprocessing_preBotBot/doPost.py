@@ -15,6 +15,8 @@ import scipy.io
 import argparse
 import networkx as nx
 import matplotlib.pyplot as plt
+import cmath
+import math
 
 maxorder=20
 eta_norm_pts = 10
@@ -29,6 +31,10 @@ def parse_args(argv):
     butter_low = -np.inf # Hz
     bin_width = 20 # ms
     cutoff = 0.5
+    peak_order = 30
+    peak_percentile = 75
+    eta_norm_pts=8
+    op_abs_thresh=0.2
     # parsing
     parser = argparse.ArgumentParser(prog="doPost",
                                      description=('Postprocessing of' 
@@ -67,7 +73,7 @@ def parse_args(argv):
     args = parser.parse_args(argv[1:])
     return args.sim, args.output, args.transient, args.sec, args.thresh, \
         args.fsig, args.butter_low, args.butter_high, args.bin_width,\
-        args.cut, args.volt
+        args.cut, args.volt,peak_order,peak_percentile,eta_norm_pts,op_abs_thresh,
 
 
 '''
@@ -233,38 +239,6 @@ def bin_spikes(spike_mat, bin_width, dt):
         binned_spikes[:,i] = np.sum(bin_data, axis=1).flatten()
     return bins, binned_spikes
 
-
-##Implementation of the mean to make sure all code is running correctly
-def find_mean(data):
-    sum = 0;
-    for x in data:
-        sum = sum + x
-    return sum/len(data)
-
-
-'''def xcorr(signal_1,signal_2,taolen):
-    xcorrl = np.empty(len(signal_1)/taolen)
-    index = 0
-    
-    signal_1 = np.asarray(signal_1)
-    signal_2 = np.asarray(signal_2)	
-    ## m1,m2 are the means of signals 1 and 2, respectivly
-    m1 = np.mean(signal_1)
-    m2 = np.mean(signal_2)
-    
-    #loops through all values of tao 
-    for tao in range(0,(len(signal_1)/taolen)):
-        sum = 0
-        if tao == 0:
-            average = np.mean((signal_1 - m1)*(signal_2-m2))
-        else:
-            average = np.mean((signal_1[0:-tao] - m1)*(signal_2[tao:] - m2))
-        xcorrl[index] = average
-        index = index + 1
-    return xcorrl
-'''
-
-
 '''
     This is computes the cross correlation for two signals
     
@@ -343,13 +317,222 @@ def find_metrics(xcorr,autocorr):
             max_time_next = peak_auto[i]
             break
     for x in peak_cross:
-        if x >= max_time and x <= max_time_next:
+        if x > max_time and x < max_time_next and xcorr[x] > 0:
             max_time_cross = x
             break
     auto_period = max_time_next - max_time
     auto_cross_perioid = max_time_cross - max_time
     phase = float(auto_cross_perioid)/float(auto_period)
     return phase, xcorr[max_time_cross]
+
+'''
+    This method finds the population burst peaks for a given signal, uses a percentile filter to elimnate finding noisy peaks 
+    
+    input:
+        signal-This is the signal you want to find the peaks of
+        peak_order-The number of points of comparison for each peak on each side of the current value
+        peak_percentile-The percentage threshold the peak must meet 
+        dt-The time step
+    
+    output:
+        pop_burst_peak-Peaks of the signal that pass the given criteria for a peak
+'''
+def burst_stats(signal,peak_order,peak_percentile,dt):
+    pop_burst_peak=scipy.signal.argrelmax(signal, order=peak_order)[0]
+    pop_burst_peak=pop_burst_peak[signal[pop_burst_peak] >
+                                    np.percentile(signal,peak_percentile)]
+    return pop_burst_peak
+
+'''
+    This method is used to get the phi (phase differences) between signals, 
+    here we use a moving window to find the refrence perioid to calculate phi
+    
+    input:
+        pop_burst_peak1(2)-This is the time for the peaks from signal 1 or signal 2 
+        bins-This is the bin info for the signals after some post processing 
+        
+    output: 
+        phis-List of phis for the signals
+'''
+def get_phis(pop_burst_peak1,pop_burst_peak2,bins):
+    phis = []
+    windowStartIndex = 0
+    windowEndIndex = 1
+    while windowEndIndex < len(pop_burst_peak1):
+        windowStart = pop_burst_peak1[windowStartIndex]
+        windowEnd = pop_burst_peak1[windowEndIndex]
+        peaksInWindow = [i for i in pop_burst_peak2 if i >= windowStart and i <= windowEnd]
+        for peak in peaksInWindow:
+            phi = (bins[peak] - bins[windowStart]) / (bins[windowEnd] - bins[windowStart])
+            phis.append(phi)
+        windowStartIndex = windowEndIndex
+        windowEndIndex = windowEndIndex + 1
+    return phis
+
+'''
+    Map phi values to a circle to accuratley take mean and std of the values 
+    
+    input:
+        phis- Phi values that are in [0,1]
+    output:
+        phis- Phi values that are now mapped to [0,2pi] represents radians
+'''
+def map_phi_to_complex(phis):
+    complex = []
+    for i in range(len(phis)):
+        radians = 2*np.pi*phis[i]
+        complex.append(cmath.rect(1,radians))
+    return complex
+
+'''
+    This will get the mean phi and variance using circular statistics 
+    
+    input:
+        complex_values- This is a list of complex values that are gotten from the phi values 
+        
+    output:
+        mean_angle- This is the mean angle of the phi values, represents what the average phase is (can be converted back)
+        variance_circular- This is the variance of the angles, 0 represents all phi values are the same.
+'''
+def get_circular_statistics(complex_values):
+    mean_resultant = np.mean(complex_values)
+    mean_angle = cmath.phase(mean_resultant)
+    variance_circular = abs(mean_resultant)
+    return mean_angle,variance_circular
+
+'''
+    This converts the mean angle back to the standard phi values which lies in [0,1]
+    
+    input:
+        mean_angle- This is the mean angle that was calculated from the list of phis
+    
+    output: 
+        This is the converted average phi values that now consisted with other metrics
+'''
+def get_normalized_phi(mean_angle):
+    if mean_angle < 0:
+        return (2*math.pi + mean_angle) / (2*math.pi)
+    else:
+        return mean_angle / (2*math.pi)
+
+def synchrony_stats(data, dt, maxlags=3000):
+    '''
+        Synchrony measures
+        
+        Parameters
+        ==========
+        data: numneuron x time
+        dt: time spacing
+        maxlags: maximal lag for autocorrelation, default=3000 ms
+        
+        Returns
+        =======
+        chi: synchrony measure
+        autocorr: autocorrelation of population avg \bar{data}(t)
+        '''
+    data_pop=np.mean(data, axis=0) # pop avg
+    sigma_pop=np.mean(np.square(data_pop)) - np.square(np.mean(data_pop))
+    sigma=np.mean(np.square(data), axis=1) - np.square(np.mean(data, axis=1))
+    sigma_mean=np.mean(sigma)
+    chisq=sigma_pop / sigma_mean
+    chi=np.sqrt(chisq)
+    mean_subtract=data_pop - np.mean(data_pop)
+    autocorr=scipy.signal.correlate(mean_subtract, mean_subtract,
+                                    mode='valid')
+    return chi, autocorr
+
+def order_param(eta_norm, eta_t_norm, op_abs_thresh):
+    '''
+        Compute the order parameter for the normalized (phase) ETAs.
+        
+        Parameters
+        ==========
+        eta_norm: normalized ETA array
+        eta_t_norm: [-.5, .5] phases corresponding to second axis of array
+        op_abs_thresh: float
+        
+        Returns
+        =======
+        ops: array of complex valued order parameters, np.nan if undefined
+        op_abs: magnitudes
+        op_angle: angles
+        op_mask: mask of ops with magnitude above threshold
+        op_angle_mean: mean angle of significant ops
+        op_angle_std: standard deviation of significant ops
+        '''
+    assert op_abs_thresh < 0.5 and op_abs_thresh >= 0.0,\
+        'op_abs_thresh out of range'
+    num_neurons=eta_norm.shape[0]
+    num_bins=eta_norm.shape[1]
+    dtheta=np.min(np.diff(eta_t_norm))
+    # below will generate NaNs if the normalization is 0
+    density_eta=eta_norm/np.tile(np.sum(eta_norm, axis=1),(num_bins,1)).T
+    ops=np.sum(density_eta*
+               np.exp(1.0j*
+                      np.tile(eta_t_norm,(num_neurons,1))*
+                      (2*np.pi)),
+               axis=1)
+    op_angle=np.angle(ops)/(2*np.pi)
+    op_abs=np.abs(ops)
+    op_mask=op_abs > op_abs_thresh
+    op_angle_mean=np.nanmean(op_angle[op_mask])
+    op_angle_std=np.nanstd(op_angle[op_mask])
+    return (ops,op_abs,op_angle,op_mask,op_angle_mean,op_angle_std)
+
+def event_trig_avg(events, data, normalize=False, pts=10):
+    '''
+        Compute an event-triggered average.
+        
+        Parameters
+        ==========
+        events, ndarray
+        Array of event indices.
+        data, ndarray, ndim=2
+        Array to be averaged along dim 1 relative to the events.
+        normalize, bool, optional
+        Whether to normalize to phase variable
+        '''
+    breakpts=np.array(
+        np.hstack((0, (events[0:-1] + events[1:]) / 2., data.shape[1]-1)),
+        dtype=np.int)
+    if normalize:
+        from scipy.interpolate import griddata
+        max_interval=2*pts
+        fullrange=np.linspace(-.5, .5, num=max_interval)
+        xgrid1=fullrange[0:pts]
+        xgrid2=fullrange[pts:]
+    else:
+        max_interval=2*np.max(np.hstack((events-breakpts[0:-1],
+                                        breakpts[1:]-events)))
+    midpt=int(np.floor(max_interval / 2))
+    numevents=events.shape[0]-2 # don't use 1st and last due to boundary
+    eta=np.zeros((data.shape[0], max_interval))
+    for j in range(numevents):
+        i=j+1
+        timeidx=np.arange(int(breakpts[i]), int(breakpts[i+1]), dtype=np.int)
+        thisevent=events[i]
+        center=int(np.where(timeidx==thisevent)[0].astype(int))
+        if normalize:
+            xs1=np.array(timeidx[:center] - timeidx[center], dtype=np.float)
+            xs1 /= xs1[0]*(-2.0)
+            xs2=np.array(timeidx[center+1:] - timeidx[center], dtype=np.float)
+            xs2 /= xs2[-1]*2.0
+            xs=np.hstack((xs1, xs2))
+            toadd=np.apply_along_axis(lambda x:
+                                      scipy.interpolate.griddata(
+                                          xs, x, fullrange),
+                                      1, data[:,timeidx])
+            eta += toadd
+        else:
+            lpad=midpt - center
+            rpad=max_interval - (len(timeidx)+lpad)
+            eta += np.pad(data[:, timeidx], ((0,0), (lpad,rpad)), 
+                          'constant', constant_values=(0,0))
+    eta /= float(numevents)
+    eta[eta < 0] = 0
+    return eta
+
+
 
 
 '''
@@ -360,7 +543,7 @@ def find_metrics(xcorr,autocorr):
         mdict - The dictionary of final variables and results. Can either be saved or used as is.
     
 '''
-def run(sim_output,trans,sec_flag,spike_thresh,f_sigma,butter_low,butter_high,bin_width,cutoff,are_volts):
+def run(sim_output,trans,sec_flag,spike_thresh,f_sigma,butter_low,butter_high,bin_width,cutoff,are_volts,peak_order,peak_percentile,eta_norm_pts,op_abs_thresh):
 
     butter_freq = np.array([butter_low,butter_high])
     if sec_flag:
@@ -399,15 +582,47 @@ def run(sim_output,trans,sec_flag,spike_thresh,f_sigma,butter_low,butter_high,bi
                                                                      f_sigma,
                                                                      butter_freq)
 
+    #Calculate Correlation Values
     cross_correlation = xcorr(butter_int_bin2,butter_int_bin)
     auto_cross_correlation1 = xcorr(butter_int_bin,butter_int_bin)
     auto_cross_correlation2 = xcorr(butter_int_bin2,butter_int_bin2)
 
-    phase_lag,pop_corr = find_metrics(cross_correlation,auto_cross_correlation1)
+    #phase_lag,pop_corr = find_metrics(cross_correlation,auto_cross_correlation1)
 
-    ##graph attributes
+    #graph attributes
     cells_inhib,graph_edges,number_of_nodes,degree_histogram = get_graphinfo(graph_fn)
+
+    #Calculating Values for Circle Map
+    pop_burst_peak1 = burst_stats(butter_int_bin,peak_order,peak_percentile,dt*bin_width/1000.)
+    pop_burst_peak2 = burst_stats(butter_int_bin2,peak_order,peak_percentile,dt*bin_width/1000.)
+    phis = get_phis(pop_burst_peak1,pop_burst_peak2,bins)
+    complex_phis = map_phi_to_complex(phis)
+    mean_angle,variance_angle = get_circular_statistics(complex_phis)
+    mean_phi = get_normalized_phi(mean_angle)
+    #std_phi = np.std(phis)
+
+    #Get Synchrony Values for each signal
+    chi1,chi1_auto = synchrony_stats(spike_fil_bin,dt*bin_width/1000.)
+    chi2,chi2_auto = synchrony_stats(spike_fil_bin2,dt*bin_width/1000.)
+
+    '''##Compute event triggered averages and get individual cell statistics
+    ##Population 1
+    ##Normalize time to phase variable [-.5,.5]
+    eta1_norm = event_trig_avg(pop_burst_peak1,spike_fil_bin,normalize=True,pts=eta_norm_pts)
+    eta1_t_norm = np.linspace(-0.5, 0.5, 2*eta_norm_pts)
+    ##Order Parameters
+    (ops1,op_abs1,op_angle1,op_mask1,
+     op_angle_mean1,op_angle_std1)=order_param(eta1_norm,eta1_t_norm,op_abs_thresh)
+    ##Population 2
+    ##Normalize time to phase variable [-.5,.5]
+    eta2_norm = event_trig_avg(pop_burst_peak2,spike_fil_bin2,normalize=True,pts=eta_norm_pts)
+    eta2_t_norm = np.linspace(-0.5, 0.5, 2*eta_norm_pts)
+    ##Order Parameters
+    (ops2,op_abs2,op_angle2,op_mask2,
+     op_angle_mean2,op_angle_std2)=order_param(eta2_norm,eta2_t_norm,op_abs_thresh)'''
     
+
+
     mdict = {'bins':bins,
              'spike_mat':spike_mat,
              'spike_mat_bin':spike_mat_bin,
@@ -422,10 +637,25 @@ def run(sim_output,trans,sec_flag,spike_thresh,f_sigma,butter_low,butter_high,bi
              'graph_edges':graph_edges,
              'number_of_nodes':number_of_nodes,
              'degree_histogram':degree_histogram,
-             'phase_lag': phase_lag,
-             'pop_correlation': pop_corr,
+             #'phase_lag': phase_lag,
+             #'pop_correlation': pop_corr,
              'time': sim_output['tf'],
-             'bin_width': bin_width
+             'bin_width': bin_width,
+             'phis' : phis,
+             'mean_phi': mean_phi,
+             'variance_angle' : variance_angle,
+             'chi1' : chi1,
+             'chi2' : chi2,
+	     'pop_burst_peak1': pop_burst_peak1,
+	     'pop_burst_peak2': pop_burst_peak2
+             #'op_abs1' : op_abs1,
+             #'op_angle1' : op_angle1,
+             #'op_angle_mean1' : op_angle_mean1,
+             #'op_angle_std1' : op_angle_std1,
+             #'op_abs2' : op_abs2,
+             #'op_angle2' : op_angle2,
+             #'op_angle_mean2' : op_angle_mean2,
+             #'op_angle_std2' : op_angle_std2
             }
 
     return mdict
@@ -439,14 +669,15 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
     else:
+        
         should_save = False
 
     (simFn, outFn, trans, sec_flag, spike_thresh, f_sigma, butter_low,
-     butter_high, bin_width, cutoff, are_volts) = parse_args(argv)
+     butter_high, bin_width, cutoff, are_volts,peak_order,peak_percentile,eta_norm_pts,op_abs_thresh) = parse_args(argv)
 
     sim_output = scipy.io.loadmat(simFn)
     
-    post_dict = run(sim_output,trans,sec_flag,spike_thresh,f_sigma,butter_low,butter_high,bin_width,cutoff,are_volts)
+    post_dict = run(sim_output,trans,sec_flag,spike_thresh,f_sigma,butter_low,butter_high,bin_width,cutoff,are_volts,peak_order,peak_percentile,eta_norm_pts,op_abs_thresh)
 
     if should_save:
         scipy.io.savemat(outFn,post_dict,oned_as ='column')
