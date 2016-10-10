@@ -2,6 +2,7 @@ clear all
 close all
 % for hyak
 set(0,'DefaultFigureVisible','off');
+%set(0,'DefaultFigureVisible','on');
 % others
 set(0,'DefaultFigurePaperPositionMode','auto')
 set(0,'DefaultAxesFontSize', 18)
@@ -11,15 +12,16 @@ set(0,'DefaultAxesLineWidth',1);
 chi_threshold=0.25;
 num_neurons=300;
 expir_threshold=15;
-fontsz=24;
+fontsz=32;
 
-dopartics = 0;
-docombined = 1;
-do_k_vs_pI=0;
-do_gE_vs_gI=1;
-partics = {'er_n300_k6.0_deg_pI0.20_rep1',...
-          'er_n300_k6.0_deg_pI0.00_rep1',...
-          'er_n300_k6.0_deg_pI0.40_rep1'};
+dopartics = 1;
+docombined = 0;
+do_k_vs_pI=1;
+do_gE_vs_gI=0;
+% partics = {'er_n300_k6.0_deg_pI0.20_rep1',...
+%           'er_n300_k6.0_deg_pI0.00_rep1',...
+%           'er_n300_k6.0_deg_pI0.40_rep1'};
+partics = {'er_n300_k6.0_deg_pI0.30_rep1'};
 % partics = {'er_n300_k1.0_deg_pI0.00_rep1',...
 %            'er_n300_k1.0_deg_pI0.10_rep1',...
 %            'er_n300_k1.0_deg_pI0.20_rep1',...
@@ -47,8 +49,8 @@ partics = {'er_n300_k6.0_deg_pI0.20_rep1',...
 %            'er_n300_k6.0_deg_pI0.90_rep1', ...
 %            'er_n300_k6.0_deg_pI1.00_rep1' 
 %           };
-projName = 'g_sweep_fix';
-%projName = 'random_extend';
+%projName = 'g_sweep_fix';
+projName = 'random_fine_g_sweep';
 opThresh = 0.2;
 
 %% start processing
@@ -253,17 +255,17 @@ if docombined
             % plt = [plotDir, '/', pltGStr, '_mean_IBI.eps']
             % print('-depsc', plt)
 
-            figure
-            myPcolor(X,Y, cvIBI(:,:,gEidx, gIidx))
-            titlestr=sprintf('CV of IBIs\ng_E = %1.1f, g_I = %1.1f',...
-                             gE,gI);
-            title(titlestr, 'fontsize', fontsz)
-            xlabel(x_axis_label,'fontsize', fontsz)
-            ylabel(y_axis_label,'fontsize', fontsz)
-            % colorbar
-            %colormap('gray')
-            plt = [plotDir, '/', pltGStr, '_cv_IBIs.eps']
-            print('-depsc', plt)
+            % figure
+            % myPcolor(X,Y, cvIBI(:,:,gEidx, gIidx))
+            % titlestr=sprintf('CV of IBIs\ng_E = %1.1f, g_I = %1.1f',...
+            %                  gE,gI);
+            % title(titlestr, 'fontsize', fontsz)
+            % xlabel(x_axis_label,'fontsize', fontsz)
+            % ylabel(y_axis_label,'fontsize', fontsz)
+            % % colorbar
+            % %colormap('gray')
+            % plt = [plotDir, '/', pltGStr, '_cv_IBIs.eps']
+            % print('-depsc', plt)
 
             % figure
             % myPcolor(X,Y, cvB(:,:,gEidx, gIidx))
@@ -545,11 +547,13 @@ if dopartics
                 peaklocs = peaklocs - trans + 2; % +1 for trans, +1 for
                                                  % python 0-indexing
                 
+                % make first bin time 0
+                thebins = thebins - thebins(1);
                 
                 set(0,'DefaultAxesFontSize', fontsz)
                 
                 figure
-                set(gcf, 'position', [1118, 727, 2675, 500])
+                set(gcf, 'position', [0, 727, 2600, 600])
                 %% subplot 1
                 h1 = subplot(2,1,1);
                 axis(h1)
@@ -557,37 +561,54 @@ if dopartics
                 hold on
                 plot(thebins(peaklocs), butterIntBin(peaklocs), 'ko')
                 %ylabel('\int preBot (Hz/neuron)', 'fontsize', 20)
-                ylabel('x^{\rm int} (Hz/cell)','fontsize',28)
+                ylabel({'x^{\rm int}', '(Hz/cell)'}, ...
+                       'fontsize', fontsz + 2)
                 axis tight
-                %% fix ylim
-                ylim([0, 40])
+                %% fix ylim & xlim
+                %ylim([0, 40]) % for Fig. 1
+                ylim([0, 55]) % for Fig. 3
                 tmp = get(gca, 'ylim');
+                set(gca,'ytick', [0, 20, 40])
                 % tmp(2)=1.05*tmp(2); % add 5 pct padding to ylim
                 set(h1, 'ylim', [0, tmp(2)]);
-                str=sprintf('\\chi = %1.3f',chival);
-                ann_x=[73,6];
-                ann_y=[0.15,0.3]*tmp(2);
+                str=sprintf('\\chi = %1.2f',chival);
+                ann_x=[36.4,3.4];
+                ann_y=[0.65,0.3]*tmp(2);
                 drawnow
                 rectangle('position', ...
                           [ann_x(1)-.15,ann_y(1)-0.02*tmp(2),...
                            ann_x(2),ann_y(2)],...
                           'facecolor', 'w')
                 text(ann_x(1),ann_y(1), str, ...
-                     'fontsize', 28, 'verticalalignment', 'bottom');
+                     'fontsize', fontsz, 'verticalalignment', 'bottom');
                 %% subplot 2
                 h2 = subplot(2,1,2);
+                % reshape raster, stretch vertically
+                pos1 = get(h1, 'pos');
+                pos2 = get(h2, 'pos');
+                pos2(4) = pos2(4) + 0.10;
+                %pos2(2) = pos2(2) + 0.05;
+                set(h2, 'pos', pos2);
+                set(h2, 'activepositionproperty', 'outerposition')
+                %set(h1,'pos', pos1);
                 axis(h2)
                 imagesc(thebins, 1:size(binCt,1), binCt(I,:));
-                xlabel('time (s)', 'fontsize', 28)
                 colormap(flipud(colormap('gray')))
+                xlabel('time (s)', 'fontsize', fontsz + 2)
+                % set(h2, 'ytick', [150,300]
                 % set(h2, 'xtick', get(h1, 'xtick'))
                 % set(h2, 'xticklabel', get(h1, 'xticklabel'))
                 %spy(binCt(I,:), 'k', 1)
                 %xlabel(['time bin (' num2str(binWidth*1000) ' ms)'])
-                ylabel('neurons', 'fontsize', 28)
+                ylabel('neurons', 'fontsize', fontsz + 2)
+                %% set xlim
+                linkaxes([h1,h2],'x')
+                xlim([0,40])
                 %% finalize and print
+                set(h1, 'xtick', 10:10:70)
                 set(h2, 'xtick', 10:10:70)
                 set(h2, 'xticklabel', get(h1,'xticklabel'))
+                set(h1, 'xticklabel', [])
                 % ann_x=[73,6];
                 % ann_y=[0.3,0.2]*max(buttrIntBin);
                 % [ann_nf_x,ann_nf_y]=ds2nfu(h1,ann_x,ann_y);
@@ -600,9 +621,14 @@ if dopartics
                 %            'fitboxtotext', 'off');
                 %plt = [plotDir, '/ts_raster.eps']
                 %print('-depsc', plt)
+
+                fig = gcf;
+                fig.PaperPositionMode = 'auto'
+                fig_pos = fig.PaperPosition;
+                fig.PaperSize = [fig_pos(3) fig_pos(4)];
+                
                 plt = [plotDir, '/', pltGStr, 'ts_combined_' partic '.eps']
                 print('-deps', plt)
-                %pause                
                 
                 %% order parameter plot
                 set(0,'DefaultAxesFontSize', 18)
@@ -621,9 +647,7 @@ if dopartics
                 plt = [plotDir, '/', pltGStr, 'op_' partic '.eps']
                 print('-deps', plt)
 
-                
                 close all
-                
             end
         end
     end
