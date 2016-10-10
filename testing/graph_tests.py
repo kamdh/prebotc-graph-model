@@ -22,10 +22,11 @@ class TestGraph(unittest.TestCase):
        
        NOTE: Must use the full path name for the grap or it will not be able to find it
     '''
-    def __init__(self,testname,graph_file,gamma):
+    def __init__(self,testname,graph_file,kintra,kinter):
         super(TestGraph,self).__init__(testname)
         self.graph_file = graph_file
-        self.gamma = 3 * float(gamma) / 2
+        self.kintra = kintra
+	self.kinter = kinter
 
     def setUp(self):
         pass
@@ -44,10 +45,10 @@ class TestGraph(unittest.TestCase):
         
         area_size = [n0,n1]
 
-        pMatE = np.array([ (3.0/(n0-1), .05/n1),
-                          (.05/n0, 3.0/(n1-1)) ])
-        pMatI = np.array([ (self.gamma/(n0-1), (3.0-self.gamma)/n1),
-                          ((3.0-self.gamma)/n0, self.gamma/(n1-1)) ])
+        pMatE = np.array([ (3.0/(n0-1), 0/n1),
+                          (0/n0, 3.0/(n1-1)) ])
+        pMatI = np.array([ (self.kintra/(n0-1), (self.kinter)/n1),
+                          ((self.kinter)/n0, self.kintra/(n1-1)) ])
                           
         #First level list represents area number
         #Second level list represents type of neuron index 0 is exict and index 1 is inh
@@ -119,12 +120,13 @@ class TestGraph(unittest.TestCase):
 
 if __name__ == '__main__':
     graph = sys.argv[1]
-    gamma = sys.argv[2]
-    output = sys.argv[3]
+    kintra = sys.argv[2]
+    kinter = sys.argv[3]
+    output = sys.argv[4]
     log_file = output
     f = open(log_file,"w")
     suite = unittest.TestSuite()
-    suite.addTest(TestGraph("test_connectionDistribution",graph,gamma))
+    suite.addTest(TestGraph("test_connectionDistribution",graph,kintra,kinter))
     unittest.TextTestRunner(f,verbosity=2).run(suite)
     f.close()
 

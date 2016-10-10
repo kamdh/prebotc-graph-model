@@ -33,15 +33,18 @@ def collect_plpc(dir_path):
         if f.endswith('.mat'):
             file_loc = os.path.join(dir_path,f)
             values = scipy.io.loadmat(file_loc)
-            phase_lag = values['phase_lag']
-            pop_correlation = values['pop_correlation']
+            mean_phi = values['mean_phi']
+            std_phi = values['variance_angle']
+	    chi_1 = values['chi1']
+	    chi_2 = values['chi2']
 
             ##This gets the degree so we can arrange data since f is not in order
-            string_pieces = re.split(r'[_]+|idegree',f)
-            degree = string_pieces[3]
-
+            string_pieces = re.split(r'[_]+|intra+|inter+|rep',f)
+            intra = string_pieces[3]
+            inter = string_pieces[5]
+            rep=string_pieces[9]
             ##Sends data as tuple for easier graphing
-            data.append((degree,phase_lag,pop_correlation))
+            data.append((intra,inter,mean_phi,std_phi,chi_1,chi_2,rep))
 
     ##Now we sort the data according to the degree to make it ordered
     ordered_data =  sorted(data,key=itemgetter(0))
@@ -58,7 +61,7 @@ def main(argv=None):
     phase_lag_pop_corr = collect_plpc(directory)
 
     scipy.io.savemat(out_fn,
-                     mdict = {'phase_lag_pop_corr':phase_lag_pop_corr}, oned_as = 'column')
+                     mdict = {'phi_avrg_std':phase_lag_pop_corr}, oned_as = 'column')
 if __name__ == '__main__':
     status = main()
     sys.exit(status)
