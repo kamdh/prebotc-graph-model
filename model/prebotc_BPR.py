@@ -8,8 +8,8 @@ import numpy as np
 import networkx as nx
 import json
 import os
-from scipy import weave
-from scipy.weave import converters
+import weave
+from weave import converters
 import math  # allow functions in math module
 from scipy.io import loadmat
 

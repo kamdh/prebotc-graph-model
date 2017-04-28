@@ -59,7 +59,7 @@ def filter_spikes(spike_mat, samp_dt, f_sigma, butter_freq):
         if width is None:
             width=std*4+1
         width /= (1000.0*samp_dt)
-        w=scipy.signal.gaussian(width, std)
+        w=scipy.signal.gaussian(int(width), std)
         if not normalize == 0:
             w=normalize * w / sum(w)
         return w
