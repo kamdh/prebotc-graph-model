@@ -503,10 +503,13 @@ def predict_ops_olm(ops, predictors):
 def irregularity_score(ts):
     return np.mean(np.abs(np.diff(ts))/ts[0:-1])
     
-def burst_stats(signal,peak_order,peak_percentile,dt):
+def burst_stats(signal,peak_order,peak_percentile,dt, threshold=None):
     pop_burst_peak=scipy.signal.argrelmax(signal, order=peak_order)[0]
-    pop_burst_peak=pop_burst_peak[signal[pop_burst_peak] >
-                                  np.percentile(signal,peak_percentile)]
+    if threshold is None:
+        pop_burst_peak=pop_burst_peak[signal[pop_burst_peak] >
+                                    np.percentile(signal,peak_percentile)]
+    else:
+        pop_burst_peak=pop_burst_peak[signal[pop_burst_peak] > threshold]
     pop_burst_trough=scipy.signal.argrelmin(signal, order=peak_order)[0]
     pop_burst_trough=pop_burst_trough[signal[pop_burst_trough] <
                                       np.percentile(signal,100.-peak_percentile)]
